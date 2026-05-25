@@ -2112,15 +2112,14 @@ function listenTyping() {
 
 function renderMessages() {
     var container = document.getElementById('chatMessages');
-    var emptyEl = document.getElementById('chatEmpty');
+    if (!container) return;
 
     if (allMessages.length === 0) {
-        container.innerHTML = '';
-        container.appendChild(emptyEl);
-        emptyEl.style.display = 'flex';
+        container.innerHTML = '<div class="chat-empty" id="chatEmpty">'
+            + '<div class="chat-empty-icon">&#128172;</div>'
+            + '<div class="chat-empty-text">还没有留言<br>写下第一句话给 TA 吧</div></div>';
         return;
     }
-    emptyEl.style.display = 'none';
 
     var html = '';
     var lastDate = '';

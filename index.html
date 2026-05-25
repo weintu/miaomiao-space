@@ -736,8 +736,8 @@
 
         .chat-container {
             display: flex; flex-direction: column; height: calc(100vh - 120px);
-            background: rgba(255,255,255,0.4); border-radius: 20px; overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.4); border-radius: 20px; overflow: visible;
+            border: 1px solid rgba(255,255,255,0.5); position: relative;
         }
         .chat-header {
             display: flex; align-items: center; gap: 10px;
@@ -800,7 +800,7 @@
         }
         .msg-avatar svg { width: 100%; height: 100%; }
 
-        .msg-bubble-wrap { max-width: 70%; }
+        .msg-bubble-wrap { max-width: 70%; position: relative; }
         .msg-sender { font-size: 10px; color: var(--gray-400); margin-bottom: 3px; padding: 0 4px; }
         .msg-row.sent .msg-sender { text-align: right; }
 
@@ -844,10 +844,10 @@
         .msg-reaction .react-count { font-size: 10px; color: var(--gray-500); }
 
         .msg-emoji-bar {
-            display: none; position: absolute; bottom: 100%; left: 0;
-            background: white; border-radius: 20px; padding: 6px 10px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.12); margin-bottom: 4px;
-            flex-wrap: wrap; gap: 4px; z-index: 5;
+            display: none; background: white; border-radius: 20px; padding: 8px 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            flex-wrap: wrap; gap: 4px; z-index: 20;
+            margin: 0 12px 8px;
         }
         .msg-emoji-bar.show { display: flex; }
         .msg-emoji-btn {
@@ -1379,11 +1379,6 @@
                         </div>
                     </div>
                     <div class="msg-typing" id="msgTyping"></div>
-                    <div class="chat-input-area">
-                        <button class="chat-emoji-toggle" onclick="toggleQuickEmoji()">&#128522;</button>
-                        <input type="text" class="chat-input" id="chatInput" placeholder="说点什么甜蜜的..." onkeypress="if(event.key==='Enter')sendMessage()">
-                        <button class="chat-send-btn" id="chatSendBtn" onclick="sendMessage()">&#10148;</button>
-                    </div>
                     <div class="msg-emoji-bar" id="quickEmojiBar">
                         <button class="msg-emoji-btn" onclick="insertEmoji('&#128522;')">&#128522;</button>
                         <button class="msg-emoji-btn" onclick="insertEmoji('&#128536;')">&#128536;</button>
@@ -1397,6 +1392,11 @@
                         <button class="msg-emoji-btn" onclick="insertEmoji('&#128568;')">&#128568;</button>
                         <button class="msg-emoji-btn" onclick="insertEmoji('&#129505;')">&#129505;</button>
                         <button class="msg-emoji-btn" onclick="insertEmoji('&#128139;')">&#128139;</button>
+                    </div>
+                    <div class="chat-input-area">
+                        <button class="chat-emoji-toggle" onclick="toggleQuickEmoji()">&#128522;</button>
+                        <input type="text" class="chat-input" id="chatInput" placeholder="说点什么甜蜜的..." onkeypress="if(event.key==='Enter')sendMessage()">
+                        <button class="chat-send-btn" id="chatSendBtn" onclick="sendMessage()">&#10148;</button>
                     </div>
                 </div>
             </div>

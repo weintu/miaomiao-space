@@ -922,6 +922,38 @@
         }
         .unread-badge:empty { display: none; }
 
+        /* Recall / Long-press action */
+        .msg-recalled {
+            font-size: 12px; color: var(--gray-400); font-style: italic;
+            padding: 8px 14px; background: rgba(0,0,0,0.03);
+            border-radius: 12px; text-align: center;
+        }
+        .msg-action-menu {
+            position: absolute; z-index: 30;
+            background: white; border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            padding: 6px; min-width: 120px;
+            animation: actionPop 0.2s ease-out;
+        }
+        @keyframes actionPop {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .msg-action-btn {
+            display: flex; align-items: center; gap: 8px;
+            width: 100%; padding: 10px 14px; border: none; background: none;
+            border-radius: 10px; font-size: 13px; color: var(--gray-700);
+            cursor: pointer; font-family: inherit; transition: all 0.15s;
+        }
+        .msg-action-btn:hover { background: var(--pink-50); }
+        .msg-action-btn.danger { color: #ef4444; }
+        .msg-action-btn.danger:hover { background: rgba(239,68,68,0.08); }
+        .msg-action-btn .action-icon { font-size: 16px; }
+        .msg-action-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 29;
+        }
+
         /* ===== Sync Status ===== */
         .sync-status {
             display: inline-flex;
@@ -2077,22 +2109,34 @@ function renderMessages() {
         }
         html += '<div class="msg-bubble-wrap">';
         html += '<div class="msg-sender">' + getRoleName(msg.sender) + '</div>';
-        html += '<div class="msg-bubble" ondblclick="showReactPicker(event,\'' + msg._key + '\')">' + escapeHtml(msg.text) + '</div>';
 
-        // Reactions
-        if (msg.reactions) {
-            html += '<div class="msg-reactions">';
-            var reactions = typeof msg.reactions === 'string' ? JSON.parse(msg.reactions) : msg.reactions;
-            for (var emoji in reactions) {
-                var count = reactions[emoji];
-                html += '<span class="msg-reaction" onclick="toggleReaction(\'' + msg._key + '\',\'' + emoji + '\')">' + emoji + ' <span class="react-count">' + count + '</span></span>';
+        if (msg.recalled) {
+            // Recalled message
+            var recalledText = isSent ? '你撤回了一条消息' : getRoleName(msg.sender) + ' 撤回了一条消息';
+            html += '<div class="msg-recalled">' + recalledText + '</div>';
+        } else {
+            // Normal message with long-press
+            html += '<div class="msg-bubble" ondblclick="showReactPicker(event,\'' + msg._key + '\')" '
+                  + 'oncontextmenu="showActionMenu(event,\'' + msg._key + '\',\'' + msg.sender + '\')" '
+                  + 'ontouchstart="startLongPress(event,\'' + msg._key + '\',\'' + msg.sender + '\')" '
+                  + 'ontouchend="cancelLongPress()" ontouchmove="cancelLongPress()">'
+                  + escapeHtml(msg.text) + '</div>';
+
+            // Reactions
+            if (msg.reactions) {
+                html += '<div class="msg-reactions">';
+                var reactions = typeof msg.reactions === 'string' ? JSON.parse(msg.reactions) : msg.reactions;
+                for (var emoji in reactions) {
+                    var count = reactions[emoji];
+                    html += '<span class="msg-reaction" onclick="toggleReaction(\'' + msg._key + '\',\'' + emoji + '\')">' + emoji + ' <span class="react-count">' + count + '</span></span>';
+                }
+                html += '</div>';
             }
-            html += '</div>';
         }
 
         html += '<div class="msg-meta">';
         html += '<span class="msg-time">' + time + '</span>';
-        if (isSent) {
+        if (isSent && !msg.recalled) {
             var readClass = msg.read ? 'read' : 'unread';
             var readIcon = msg.read ? '&#10003;&#10003;' : '&#10003;';
             html += '<span class="msg-read-status ' + readClass + '">' + readIcon + '</span>';
@@ -2221,6 +2265,106 @@ function toggleReaction(msgKey, emoji) {
     reactRef.transaction(function(current) {
         return (current || 0) + 1;
     });
+}
+
+// Message Actions (recall, copy)
+var longPressTimer = null;
+
+function startLongPress(event, msgKey, sender) {
+    cancelLongPress();
+    longPressTimer = setTimeout(function() {
+        showActionMenu(event, msgKey, sender);
+    }, 500);
+}
+
+function cancelLongPress() {
+    if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+    }
+}
+
+function showActionMenu(event, msgKey, sender) {
+    event.preventDefault();
+    event.stopPropagation();
+    closeActionMenu();
+
+    var overlay = document.createElement('div');
+    overlay.className = 'msg-action-overlay';
+    overlay.id = 'actionOverlay';
+    overlay.onclick = closeActionMenu;
+    document.body.appendChild(overlay);
+
+    var menu = document.createElement('div');
+    menu.className = 'msg-action-menu';
+    menu.id = 'actionMenu';
+
+    // Find the message
+    var msg = allMessages.find(function(m) { return m._key === msgKey; });
+    if (!msg || msg.recalled) return;
+
+    var html = '';
+
+    // Copy button (for all messages)
+    html += '<button class="msg-action-btn" onclick="copyMessage(\'' + msgKey + '\')">'
+          + '<span class="action-icon">&#128203;</span> 复制</button>';
+
+    // Recall button (only for own messages)
+    if (sender === myRole) {
+        html += '<button class="msg-action-btn danger" onclick="recallMessage(\'' + msgKey + '\')">'
+              + '<span class="action-icon">&#128260;</span> 撤回</button>';
+    }
+
+    // Delete button (delete for everyone)
+    html += '<button class="msg-action-btn danger" onclick="deleteMessage(\'' + msgKey + '\')">'
+          + '<span class="action-icon">&#128465;</span> 删除</button>';
+
+    menu.innerHTML = html;
+    document.body.appendChild(menu);
+
+    // Position the menu
+    var rect = event.target.closest('.msg-bubble').getBoundingClientRect();
+    var menuW = 130, menuH = sender === myRole ? 120 : 90;
+    var left = Math.min(rect.left, window.innerWidth - menuW - 10);
+    var top = rect.top - menuH - 8;
+    if (top < 10) top = rect.bottom + 8;
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+}
+
+function closeActionMenu() {
+    var menu = document.getElementById('actionMenu');
+    var overlay = document.getElementById('actionOverlay');
+    if (menu) menu.remove();
+    if (overlay) overlay.remove();
+}
+
+function recallMessage(msgKey) {
+    if (!confirm('确定要撤回这条消息吗？')) { closeActionMenu(); return; }
+    db.ref('miaomiao/messages/' + msgKey).update({ recalled: true, text: '' });
+    closeActionMenu();
+    showToast('消息已撤回');
+}
+
+function deleteMessage(msgKey) {
+    if (!confirm('确定要删除这条消息吗？对方也将看不到。')) { closeActionMenu(); return; }
+    db.ref('miaomiao/messages/' + msgKey).remove();
+    closeActionMenu();
+    showToast('消息已删除');
+}
+
+function copyMessage(msgKey) {
+    var msg = allMessages.find(function(m) { return m._key === msgKey; });
+    if (!msg) { closeActionMenu(); return; }
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(msg.text).then(function() { showToast('已复制'); });
+    } else {
+        var ta = document.createElement('textarea');
+        ta.value = msg.text; document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+        showToast('已复制');
+    }
+    closeActionMenu();
 }
 
 // Close emoji bars on outside click

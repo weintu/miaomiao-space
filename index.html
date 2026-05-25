@@ -1689,7 +1689,7 @@ function renderPeriod() {
     var startBtn = document.getElementById('periodStartBtn');
     var endBtn = document.getElementById('periodEndBtn');
 
-    var today = new Date().toISOString().split('T')[0];
+    var today = getTodayStr();
     var startDateInput = document.getElementById('periodStartDate');
     var endDateInput = document.getElementById('periodEndDate');
 
@@ -1940,14 +1940,21 @@ function renderCyclePhase() {
 // ==================== Todo (Firebase synced) ====================
 var todoData = { date: '', items: [] };
 
+function getTodayStr() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
 function listenTodos() {
     db.ref('miaomiao/todos').on('value', function(snap) {
         var val = snap.val();
-        var today = new Date().toISOString().split('T')[0];
+        var today = getTodayStr();
         if (val && val.date === today) {
             todoData = val;
         } else {
+            // New day — clear old todos from Firebase
             todoData = { date: today, items: [] };
+            db.ref('miaomiao/todos').set(todoData);
         }
         renderTodos();
     });

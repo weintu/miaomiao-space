@@ -709,6 +709,24 @@
         .todo-delete:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
         .todo-empty { text-align: center; padding: 24px; color: var(--gray-400); font-size: 13px; }
 
+        /* ===== Sync Status ===== */
+        .sync-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            color: var(--gray-400);
+            margin-top: 2px;
+        }
+        .sync-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #22c55e;
+        }
+        .sync-dot.offline { background: #ef4444; }
+        .sync-dot.syncing { background: #f59e0b; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
         /* ===== Toast ===== */
         .toast {
             position: fixed; top: 60px; left: 50%;
@@ -755,6 +773,7 @@
     <div class="top-header">
         <h1><span class="cat">&#128049;</span> 苗苗的专属空间</h1>
         <div class="date-display" id="dateDisplay"></div>
+        <div class="sync-status"><span class="sync-dot" id="syncDot"></span><span id="syncText">已连接</span></div>
     </div>
 
     <!-- Content Area -->
@@ -1024,7 +1043,39 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
 <script>
+// ==================== Firebase Config ====================
+// !! 重要：请替换为你自己的 Firebase 配置 !!
+// 按照下面的步骤获取配置信息
+var firebaseConfig = {
+    apiKey: "AIzaSyCntZMmlVBFbJyLVvprDj-8RxI-f8M0OLg",
+    authDomain: "miaomiao-space.firebaseapp.com",
+    databaseURL: "https://miaomiao-space-default-rtdb.firebaseio.com",
+    projectId: "miaomiao-space",
+    storageBucket: "miaomiao-space.firebasestorage.app",
+    messagingSenderId: "978321177455",
+    appId: "1:978321177455:web:b6c7013509b49c4b2dc69a"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+var db = firebase.database();
+var connected = false;
+
+// Sync status indicator
+var syncDot = document.getElementById('syncDot');
+var syncText = document.getElementById('syncText');
+
+db.ref('.info/connected').on('value', function(snap) {
+    connected = snap.val() === true;
+    syncDot.className = 'sync-dot' + (connected ? '' : ' offline');
+    syncText.textContent = connected ? '已同步' : '离线';
+});
+
 // ==================== Tab Navigation ====================
 function switchTab(name) {
     var pages = document.querySelectorAll('.page');
@@ -1063,25 +1114,29 @@ function updateGreeting() {
     document.getElementById('greetingText').innerHTML = g;
 }
 
-// ==================== Love Counter ====================
+// ==================== Love Counter (Firebase synced) ====================
 function updateLoveDays() {
-    var startDate = localStorage.getItem('miaomiao_love_start');
-    if (startDate) {
-        var diff = Math.floor((new Date() - new Date(startDate)) / 86400000);
-        document.getElementById('loveDays').textContent = diff;
-    } else {
-        document.getElementById('loveDays').textContent = '??';
-        document.getElementById('loveDays').style.cursor = 'pointer';
-        document.getElementById('loveDays').title = '点击设置';
-        document.getElementById('loveDays').onclick = function() {
-            var d = prompt('请输入你们在一起的日期（格式：2024-01-01）');
-            if (d && !isNaN(new Date(d))) {
-                localStorage.setItem('miaomiao_love_start', d);
-                updateLoveDays();
-                showToast('已保存，你们的爱情从 ' + d + ' 开始');
-            }
-        };
-    }
+    db.ref('miaomiao/loveStart').on('value', function(snap) {
+        var startDate = snap.val();
+        if (startDate) {
+            var diff = Math.floor((new Date() - new Date(startDate)) / 86400000);
+            document.getElementById('loveDays').textContent = diff;
+            document.getElementById('loveDays').style.cursor = 'default';
+            document.getElementById('loveDays').onclick = null;
+            document.getElementById('loveDays').title = '';
+        } else {
+            document.getElementById('loveDays').textContent = '??';
+            document.getElementById('loveDays').style.cursor = 'pointer';
+            document.getElementById('loveDays').title = '点击设置';
+            document.getElementById('loveDays').onclick = function() {
+                var d = prompt('请输入你们在一起的日期（格式：2024-01-01）');
+                if (d && !isNaN(new Date(d))) {
+                    db.ref('miaomiao/loveStart').set(d);
+                    showToast('已保存，你们的爱情从 ' + d + ' 开始');
+                }
+            };
+        }
+    });
 }
 
 // ==================== Weather ====================
@@ -1149,50 +1204,56 @@ async function fetchWeather() {
     }
 }
 
-// ==================== Period Tracker ====================
-function getPeriodData() { return JSON.parse(localStorage.getItem('miaomiao_period') || '{"records":[],"currentStart":null}'); }
-function savePeriodData(d) { localStorage.setItem('miaomiao_period', JSON.stringify(d)); }
+// ==================== Period Tracker (Firebase synced) ====================
+var periodData = { records: [], currentStart: null };
+
+function listenPeriod() {
+    db.ref('miaomiao/period').on('value', function(snap) {
+        var val = snap.val();
+        periodData = val || { records: [], currentStart: null };
+        if (!periodData.records) periodData.records = [];
+        renderPeriod();
+        renderCyclePhase();
+    });
+}
+
+function savePeriodData(d) {
+    db.ref('miaomiao/period').set(d);
+}
 
 function startPeriod() {
-    var data = getPeriodData();
-    if (data.currentStart) { showToast('请先结束当前经期记录'); return; }
+    if (periodData.currentStart) { showToast('请先结束当前经期记录'); return; }
     var dateInput = document.getElementById('periodStartDate');
     var selectedDate = dateInput.value;
     if (!selectedDate) { showToast('请选择经期开始日期'); return; }
     if (new Date(selectedDate) > new Date()) { showToast('开始日期不能是未来哦'); return; }
-    data.currentStart = selectedDate;
-    savePeriodData(data);
-    renderPeriod(); renderCyclePhase();
+    periodData.currentStart = selectedDate;
+    savePeriodData(periodData);
     showToast('经期开始已记录 ' + selectedDate);
 }
 
 function endPeriod() {
-    var data = getPeriodData();
-    if (!data.currentStart) { showToast('请先记录经期开始日期'); return; }
+    if (!periodData.currentStart) { showToast('请先记录经期开始日期'); return; }
     var dateInput = document.getElementById('periodEndDate');
     var selectedDate = dateInput.value;
     if (!selectedDate) { showToast('请选择经期结束日期'); return; }
-    if (new Date(selectedDate) < new Date(data.currentStart)) { showToast('结束日期不能早于开始日期'); return; }
+    if (new Date(selectedDate) < new Date(periodData.currentStart)) { showToast('结束日期不能早于开始日期'); return; }
     if (new Date(selectedDate) > new Date()) { showToast('结束日期不能是未来哦'); return; }
-    var duration = Math.ceil((new Date(selectedDate) - new Date(data.currentStart)) / 86400000) + 1;
-    data.records.unshift({ start: data.currentStart, end: selectedDate, duration: duration });
-    data.currentStart = null;
-    savePeriodData(data);
-    renderPeriod(); renderCyclePhase();
+    var duration = Math.ceil((new Date(selectedDate) - new Date(periodData.currentStart)) / 86400000) + 1;
+    periodData.records.unshift({ start: periodData.currentStart, end: selectedDate, duration: duration });
+    periodData.currentStart = null;
+    savePeriodData(periodData);
     showToast('经期结束，持续 ' + duration + ' 天');
 }
 
 function deletePeriodRecord(i) {
     if (!confirm('确定要删除这条记录吗？')) return;
-    var data = getPeriodData();
-    data.records.splice(i, 1);
-    savePeriodData(data);
-    renderPeriod(); renderCyclePhase();
+    periodData.records.splice(i, 1);
+    savePeriodData(periodData);
     showToast('已删除');
 }
 
 function renderPeriod() {
-    var data = getPeriodData();
     var statusEl = document.getElementById('periodStatus');
     var startBtn = document.getElementById('periodStartBtn');
     var endBtn = document.getElementById('periodEndBtn');
@@ -1201,21 +1262,21 @@ function renderPeriod() {
     var startDateInput = document.getElementById('periodStartDate');
     var endDateInput = document.getElementById('periodEndDate');
 
-    if (data.currentStart) {
-        var days = Math.ceil((new Date() - new Date(data.currentStart)) / 86400000) + 1;
+    if (periodData.currentStart) {
+        var days = Math.ceil((new Date() - new Date(periodData.currentStart)) / 86400000) + 1;
         statusEl.className = 'period-status active';
         statusEl.innerHTML = '&#128138; 经期进行中 &middot; 第 <strong>' + days + '</strong> 天';
         startBtn.disabled = true;
         endBtn.disabled = false;
-        startDateInput.value = data.currentStart;
+        startDateInput.value = periodData.currentStart;
         startDateInput.disabled = true;
         endDateInput.disabled = false;
         endDateInput.value = endDateInput.value || today;
-        endDateInput.min = data.currentStart;
+        endDateInput.min = periodData.currentStart;
         endDateInput.max = today;
-    } else if (data.records.length > 0) {
-        var avgC = calcAvgCycle(data.records);
-        var nextStart = new Date(new Date(data.records[0].end).getTime() + avgC * 86400000);
+    } else if (periodData.records.length > 0) {
+        var avgC = calcAvgCycle(periodData.records);
+        var nextStart = new Date(new Date(periodData.records[0].end).getTime() + avgC * 86400000);
         var daysUntil = Math.ceil((nextStart - new Date()) / 86400000);
         if (daysUntil <= 3 && daysUntil > 0) {
             statusEl.className = 'period-status upcoming';
@@ -1246,21 +1307,21 @@ function renderPeriod() {
         endDateInput.disabled = true;
     }
 
-    if (data.records.length >= 2) {
-        document.getElementById('avgCycle').textContent = calcAvgCycle(data.records);
-        document.getElementById('avgDuration').textContent = calcAvgDur(data.records);
+    if (periodData.records.length >= 2) {
+        document.getElementById('avgCycle').textContent = calcAvgCycle(periodData.records);
+        document.getElementById('avgDuration').textContent = calcAvgDur(periodData.records);
     }
 
     var hist = document.getElementById('periodHistory');
-    if (data.records.length === 0 && !data.currentStart) {
+    if (periodData.records.length === 0 && !periodData.currentStart) {
         hist.innerHTML = '<div class="period-empty">还没有记录哦</div>';
     } else {
         var html = '';
-        if (data.currentStart) {
-            var d = Math.ceil((new Date() - new Date(data.currentStart)) / 86400000) + 1;
-            html += '<div class="period-history-item"><span class="dates">' + data.currentStart + ' ~ 进行中</span><span class="duration">第' + d + '天</span></div>';
+        if (periodData.currentStart) {
+            var d = Math.ceil((new Date() - new Date(periodData.currentStart)) / 86400000) + 1;
+            html += '<div class="period-history-item"><span class="dates">' + periodData.currentStart + ' ~ 进行中</span><span class="duration">第' + d + '天</span></div>';
         }
-        data.records.forEach(function(r, i) {
+        periodData.records.forEach(function(r, i) {
             html += '<div class="period-history-item"><span class="dates">' + r.start + ' ~ ' + r.end + '</span><span class="duration">' + r.duration + '天</span><button class="delete-btn" onclick="deletePeriodRecord(' + i + ')">&#128465;</button></div>';
         });
         hist.innerHTML = html;
@@ -1290,17 +1351,17 @@ function getCyclePhase(data) {
         ringPercent: 0
     };
 
-    if (!data.currentStart && data.records.length === 0) return result;
+    if (!data.currentStart && (!data.records || data.records.length === 0)) return result;
 
-    var cycleLen = data.records.length >= 2 ? calcAvgCycle(data.records) : 28;
-    var avgDur = data.records.length > 0 ? calcAvgDur(data.records) : 5;
+    var records = data.records || [];
+    var cycleLen = records.length >= 2 ? calcAvgCycle(records) : 28;
+    var avgDur = records.length > 0 ? calcAvgDur(records) : 5;
     var lastStart;
 
     if (data.currentStart) {
         lastStart = new Date(data.currentStart);
-    } else if (data.records.length > 0) {
-        lastStart = new Date(data.records[0].start);
-        // If we're past the predicted next period, estimate current cycle from predicted start
+    } else if (records.length > 0) {
+        lastStart = new Date(records[0].start);
         var predictedNext = new Date(lastStart.getTime() + cycleLen * 86400000);
         if (new Date() > predictedNext) {
             var daysSinceLast = Math.floor((new Date() - lastStart) / 86400000);
@@ -1322,8 +1383,7 @@ function getCyclePhase(data) {
     result.cycleLen = cycleLen;
     result.ringPercent = Math.min(day / cycleLen, 1);
 
-    if (data.currentStart || (data.records.length > 0 && day <= menstrualEnd)) {
-        // Currently in menstrual phase or period is active
+    if (data.currentStart || (records.length > 0 && day <= menstrualEnd)) {
         if (data.currentStart) {
             var daysIn = Math.floor((new Date() - new Date(data.currentStart)) / 86400000) + 1;
             result.phase = 'menstrual';
@@ -1334,13 +1394,7 @@ function getCyclePhase(data) {
             result.bannerSub = '注意保暖、多休息，避免生冷食物';
             result.bannerClass = 'banner-menstrual';
             result.phaseClass = 'menstrual';
-            result.tips = [
-                '注意腹部保暖，可用暖水袋热敷',
-                '喝红糖姜茶，吃红枣桂圆补血',
-                '避免剧烈运动，可做轻柔瑜伽',
-                '保证每天7-8小时充足睡眠',
-                '避免生冷食物、浓茶和咖啡'
-            ];
+            result.tips = ['注意腹部保暖，可用暖水袋热敷','喝红糖姜茶，吃红枣桂圆补血','避免剧烈运动，可做轻柔瑜伽','保证每天7-8小时充足睡眠','避免生冷食物、浓茶和咖啡'];
         } else if (day <= menstrualEnd) {
             result.phase = 'menstrual';
             result.phaseName = '月经期（预测）';
@@ -1350,16 +1404,9 @@ function getCyclePhase(data) {
             result.bannerSub = '预计正处于经期，注意保暖和休息';
             result.bannerClass = 'banner-menstrual';
             result.phaseClass = 'menstrual';
-            result.tips = [
-                '注意腹部保暖，可用暖水袋热敷',
-                '喝红糖姜茶，吃红枣桂圆补血',
-                '避免剧烈运动，可做轻柔瑜伽',
-                '保证每天7-8小时充足睡眠',
-                '避免生冷食物、浓茶和咖啡'
-            ];
+            result.tips = ['注意腹部保暖，可用暖水袋热敷','喝红糖姜茶，吃红枣桂圆补血','避免剧烈运动，可做轻柔瑜伽','保证每天7-8小时充足睡眠','避免生冷食物、浓茶和咖啡'];
         }
     } else if (day <= ovulationStart) {
-        // Follicular phase
         result.phase = 'follicular';
         result.phaseName = '卵泡期';
         result.phaseDesc = '雌激素上升中，精力逐渐恢复，是状态最好的时期';
@@ -1368,15 +1415,8 @@ function getCyclePhase(data) {
         result.bannerSub = '精力充沛期，适合运动和社交活动';
         result.bannerClass = 'banner-follicular';
         result.phaseClass = 'follicular';
-        result.tips = [
-            '精力最好的时期，适合安排重要工作',
-            '可以增加运动强度：跑步、游泳、力量训练',
-            '多吃富含蛋白质和铁的食物：鸡蛋、鱼肉、菠菜',
-            '皮肤状态变好，是护肤美容的好时机',
-            '多参加户外活动，保持心情愉悦'
-        ];
+        result.tips = ['精力最好的时期，适合安排重要工作','可以增加运动强度：跑步、游泳、力量训练','多吃富含蛋白质和铁的食物：鸡蛋、鱼肉、菠菜','皮肤状态变好，是护肤美容的好时机','多参加户外活动，保持心情愉悦'];
     } else if (day <= ovulationEnd) {
-        // Ovulation phase
         result.phase = 'ovulation';
         result.phaseName = '排卵期';
         result.phaseDesc = '卵子排出中，身体可能有轻微不适';
@@ -1385,15 +1425,8 @@ function getCyclePhase(data) {
         result.bannerSub = '注意个人卫生，保持规律作息';
         result.bannerClass = 'banner-ovulation';
         result.phaseClass = 'ovulation';
-        result.tips = [
-            '可能有轻微腹痛或少量出血，属正常现象',
-            '白带增多呈透明拉丝状，注意个人卫生',
-            '保持规律作息，避免过度劳累',
-            '多吃富含维生素E的食物：坚果、牛油果',
-            '如有备孕计划，这是最佳受孕窗口期'
-        ];
+        result.tips = ['可能有轻微腹痛或少量出血，属正常现象','白带增多呈透明拉丝状，注意个人卫生','保持规律作息，避免过度劳累','多吃富含维生素E的食物：坚果、牛油果','如有备孕计划，这是最佳受孕窗口期'];
     } else {
-        // Luteal phase
         var lutealDay = day - lutealStart + 1;
         result.phase = 'luteal';
         result.phaseName = '黄体期';
@@ -1403,24 +1436,17 @@ function getCyclePhase(data) {
         result.bannerSub = '可能出现情绪波动，注意饮食和休息';
         result.bannerClass = 'banner-luteal';
         result.phaseClass = 'luteal';
-        result.tips = [
-            '可能出现情绪波动、乳房胀痛，属正常经前反应',
-            '饮食宜清淡，减少盐分摄入防水肿',
-            '多吃香蕉、鸡肉等富含B6的食物缓解情绪',
-            '适当运动释放压力，避免过度疲劳',
-            '提前准备卫生用品，注意保暖为经期做准备'
-        ];
+        result.tips = ['可能出现情绪波动、乳房胀痛，属正常经前反应','饮食宜清淡，减少盐分摄入防水肿','多吃香蕉、鸡肉等富含B6的食物缓解情绪','适当运动释放压力，避免过度疲劳','提前准备卫生用品，注意保暖为经期做准备'];
     }
 
     return result;
 }
 
 function renderCyclePhase() {
-    var data = getPeriodData();
-    var info = getCyclePhase(data);
+    var info = getCyclePhase(periodData);
 
     // Update ring
-    var circumference = 2 * Math.PI * 70; // ~439.8
+    var circumference = 2 * Math.PI * 70;
     var offset = circumference * (1 - info.ringPercent);
     var ringFill = document.getElementById('cycleRingFill');
     ringFill.style.strokeDashoffset = offset;
@@ -1434,16 +1460,15 @@ function renderCyclePhase() {
     document.getElementById('cycleDay').textContent = info.phase === 'unknown' ? '--' : info.day;
     document.getElementById('cycleDayLabel').textContent = info.phase === 'unknown' ? '周期天数' : '/ ' + info.cycleLen + '天';
 
-    // Update phase name
     var phaseNameEl = document.getElementById('phaseName');
     phaseNameEl.textContent = info.phaseName;
     phaseNameEl.className = 'phase-name ' + info.phaseClass;
     document.getElementById('phaseDesc').textContent = info.phaseDesc;
 
-    // Update timeline
     var segments = document.querySelectorAll('.phase-segment');
     var cycleLen = info.cycleLen || 28;
-    var avgDur = data.records.length > 0 ? calcAvgDur(data.records) : 5;
+    var records = periodData.records || [];
+    var avgDur = records.length > 0 ? calcAvgDur(records) : 5;
     var ovDay = Math.round(cycleLen / 2);
 
     segments[0].style.flex = avgDur;
@@ -1457,14 +1482,12 @@ function renderCyclePhase() {
     else if (info.phase === 'ovulation') segments[2].classList.remove('seg-inactive');
     else if (info.phase === 'luteal') segments[3].classList.remove('seg-inactive');
 
-    // Update banner
     var banner = document.getElementById('currentPhaseBanner');
     banner.className = 'current-phase-banner ' + info.bannerClass;
     banner.querySelector('.banner-icon').innerHTML = info.bannerIcon;
     document.getElementById('bannerTitle').textContent = info.bannerTitle;
     document.getElementById('bannerSub').textContent = info.bannerSub;
 
-    // Update care tips
     if (info.tips.length > 0) {
         var dotClass = 'dot-' + info.phase;
         var iconClass = 'ci-' + info.phase;
@@ -1483,52 +1506,72 @@ function renderCyclePhase() {
     }
 }
 
-// ==================== Todo ====================
-function getTodos() {
-    var today = new Date().toISOString().split('T')[0];
-    var s = JSON.parse(localStorage.getItem('miaomiao_todos') || '{}');
-    return s.date === today ? s : { date: today, items: [] };
+// ==================== Todo (Firebase synced) ====================
+var todoData = { date: '', items: [] };
+
+function listenTodos() {
+    db.ref('miaomiao/todos').on('value', function(snap) {
+        var val = snap.val();
+        var today = new Date().toISOString().split('T')[0];
+        if (val && val.date === today) {
+            todoData = val;
+        } else {
+            todoData = { date: today, items: [] };
+        }
+        renderTodos();
+    });
 }
-function saveTodos(t) { localStorage.setItem('miaomiao_todos', JSON.stringify(t)); }
+
+function saveTodos() {
+    db.ref('miaomiao/todos').set(todoData);
+}
 
 function addTodo() {
     var input = document.getElementById('todoInput');
     var text = input.value.trim();
     if (!text) return;
-    var todos = getTodos();
-    todos.items.push({ text: text, done: false });
-    saveTodos(todos); input.value = '';
-    renderTodos(); showToast('已添加：' + text);
+    if (!todoData.items) todoData.items = [];
+    todoData.items.push({ text: text, done: false });
+    saveTodos(); input.value = '';
+    showToast('已添加：' + text);
 }
 
 function addQuickTodo(text) {
-    var todos = getTodos();
-    if (todos.items.some(function(i){return i.text===text})) { showToast('已经在列表里啦'); return; }
-    todos.items.push({ text: text, done: false });
-    saveTodos(todos); renderTodos(); showToast('已添加：' + text);
+    if (!todoData.items) todoData.items = [];
+    if (todoData.items.some(function(i){return i.text===text})) { showToast('已经在列表里啦'); return; }
+    todoData.items.push({ text: text, done: false });
+    saveTodos(); showToast('已添加：' + text);
 }
 
-function toggleTodo(i) { var t = getTodos(); t.items[i].done = !t.items[i].done; saveTodos(t); renderTodos(); }
-function deleteTodo(i) { var t = getTodos(); t.items.splice(i,1); saveTodos(t); renderTodos(); }
+function toggleTodo(i) {
+    if (!todoData.items) return;
+    todoData.items[i].done = !todoData.items[i].done;
+    saveTodos();
+}
+function deleteTodo(i) {
+    if (!todoData.items) return;
+    todoData.items.splice(i,1);
+    saveTodos();
+}
 
 function escapeHtml(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
 function renderTodos() {
-    var todos = getTodos();
+    var items = todoData.items || [];
     var listEl = document.getElementById('todoList');
     var emptyEl = document.getElementById('todoEmpty');
     var progEl = document.getElementById('todoProgress');
 
-    if (todos.items.length === 0) {
+    if (items.length === 0) {
         listEl.innerHTML = ''; emptyEl.style.display = 'block'; progEl.style.display = 'none'; return;
     }
     emptyEl.style.display = 'none'; progEl.style.display = 'flex';
-    var done = todos.items.filter(function(t){return t.done}).length;
-    var pct = Math.round((done / todos.items.length) * 100);
+    var done = items.filter(function(t){return t.done}).length;
+    var pct = Math.round((done / items.length) * 100);
     document.getElementById('progressFill').style.width = pct + '%';
-    document.getElementById('progressText').textContent = done + '/' + todos.items.length;
+    document.getElementById('progressText').textContent = done + '/' + items.length;
 
-    listEl.innerHTML = todos.items.map(function(item, i) {
+    listEl.innerHTML = items.map(function(item, i) {
         return '<li class="todo-item ' + (item.done?'done':'') + '">' +
             '<div class="todo-checkbox" onclick="toggleTodo('+i+')"></div>' +
             '<span class="todo-text">' + escapeHtml(item.text) + '</span>' +
@@ -1545,8 +1588,11 @@ function showToast(msg) {
 
 // ==================== Init ====================
 function init() {
-    updateDate(); updateGreeting(); updateLoveDays();
-    fetchWeather(); renderPeriod(); renderTodos(); renderCyclePhase();
+    updateDate(); updateGreeting();
+    updateLoveDays();
+    listenPeriod();
+    listenTodos();
+    fetchWeather();
     setInterval(function(){ updateDate(); updateGreeting(); }, 60000);
     setInterval(fetchWeather, 30*60*1000);
 }

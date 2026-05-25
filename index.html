@@ -1464,8 +1464,8 @@
 <div class="toast" id="toast"></div>
 
 <!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
 <script>
 // ==================== Firebase Config ====================
@@ -2047,22 +2047,39 @@ function initChat() {
     listenTyping();
 }
 
+var messagesRef = null;
+
 function listenMessages() {
-    db.ref('miaomiao/messages').orderByChild('timestamp').on('value', function(snap) {
+    // Remove old listener if any
+    if (messagesRef) messagesRef.off();
+
+    messagesRef = db.ref('miaomiao/messages');
+    messagesRef.on('value', function(snap) {
         allMessages = [];
-        snap.forEach(function(child) {
-            var msg = child.val();
-            msg._key = child.key;
-            allMessages.push(msg);
-        });
+        var val = snap.val();
+        if (val) {
+            Object.keys(val).forEach(function(key) {
+                var msg = val[key];
+                msg._key = key;
+                allMessages.push(msg);
+            });
+            // Sort by timestamp client-side
+            allMessages.sort(function(a, b) { return a.timestamp - b.timestamp; });
+        }
         renderMessages();
         markMessagesRead();
+    }, function(err) {
+        console.error('Firebase listen error:', err);
     });
 }
 
+var typingRef = null;
+
 function listenTyping() {
+    if (typingRef) typingRef.off();
     var partner = getPartnerRole();
-    db.ref('miaomiao/typing/' + partner).on('value', function(snap) {
+    typingRef = db.ref('miaomiao/typing/' + partner);
+    typingRef.on('value', function(snap) {
         var isTyping = snap.val();
         var el = document.getElementById('msgTyping');
         if (isTyping) {
@@ -2169,7 +2186,10 @@ function sendMessage() {
         read: false
     };
 
-    db.ref('miaomiao/messages').push(msg);
+    var newRef = db.ref('miaomiao/messages').push(msg);
+    msg._key = newRef.key;
+    allMessages.push(msg);
+    renderMessages();
     input.value = '';
     clearTyping();
 
@@ -2194,9 +2214,13 @@ function markMessagesRead() {
     }
 }
 
+var unreadRef = null;
+
 function listenUnread() {
+    if (unreadRef) unreadRef.off();
     if (!myRole) return;
-    db.ref('miaomiao/unread/' + myRole).on('value', function(snap) {
+    unreadRef = db.ref('miaomiao/unread/' + myRole);
+    unreadRef.on('value', function(snap) {
         var count = snap.val() || 0;
         var badge = document.getElementById('msgUnreadBadge');
         badge.textContent = count > 0 ? (count > 99 ? '99+' : count) : '';

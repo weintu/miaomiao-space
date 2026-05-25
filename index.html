@@ -1482,9 +1482,16 @@ var firebaseConfig = {
 };
 
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+try {
+    firebase.initializeApp(firebaseConfig);
+} catch(e) {
+    console.error('Firebase init error:', e);
+}
 var db = firebase.database();
 var connected = false;
+
+// Enable offline persistence
+db.goOnline();
 
 // Sync status indicator
 var syncDot = document.getElementById('syncDot');
@@ -1494,7 +1501,17 @@ db.ref('.info/connected').on('value', function(snap) {
     connected = snap.val() === true;
     syncDot.className = 'sync-dot' + (connected ? '' : ' offline');
     syncText.textContent = connected ? '已同步' : '离线';
+    console.log('[Firebase] Connected:', connected);
 });
+
+// Periodic reconnect check
+setInterval(function() {
+    db.ref('.info/connected').once('value', function(snap) {
+        connected = snap.val() === true;
+        syncDot.className = 'sync-dot' + (connected ? '' : ' offline');
+        syncText.textContent = connected ? '已同步' : '离线';
+    });
+}, 15000);
 
 // ==================== Tab Navigation ====================
 function switchTab(name) {
@@ -2042,35 +2059,102 @@ function initChat() {
     document.getElementById('chatHeaderAvatar').innerHTML = getAvatarSVG(partner);
     document.getElementById('chatHeaderName').textContent = partner === 'boy' ? 'Boy 的留言板' : 'Girl 的留言板';
 
+    // Keep messages path synced
+    db.ref('miaomiao/messages').keepSynced(true);
+
     // Listen for messages
     listenMessages();
     listenTyping();
+    listenUnread();
 }
 
 var messagesRef = null;
+var messageKeys = {};  // for deduplication
+var fullSyncTimer = null;
 
 function listenMessages() {
-    // Remove old listener if any
-    if (messagesRef) messagesRef.off();
+    // Remove old listeners
+    if (messagesRef) {
+        messagesRef.off('child_added');
+        messagesRef.off('child_changed');
+        messagesRef.off('child_removed');
+    }
+
+    messageKeys = {};
+    allMessages = [];
 
     messagesRef = db.ref('miaomiao/messages');
-    messagesRef.on('value', function(snap) {
-        allMessages = [];
-        var val = snap.val();
-        if (val) {
-            Object.keys(val).forEach(function(key) {
-                var msg = val[key];
-                msg._key = key;
-                allMessages.push(msg);
-            });
-            // Sort by timestamp client-side
-            allMessages.sort(function(a, b) { return a.timestamp - b.timestamp; });
+
+    // Primary: child_added — fires for each existing + new message
+    messagesRef.on('child_added', function(childSnap) {
+        var key = childSnap.key;
+        if (messageKeys[key]) return; // deduplicate
+        messageKeys[key] = true;
+
+        var msg = childSnap.val();
+        if (!msg) return;
+        msg._key = key;
+        allMessages.push(msg);
+        allMessages.sort(function(a, b) { return a.timestamp - b.timestamp; });
+        renderMessages();
+        markMessagesRead();
+        console.log('[Chat] child_added:', key, msg.text ? msg.text.substring(0, 20) : '(recalled)');
+    }, function(err) {
+        console.error('[Chat] child_added error:', err);
+    });
+
+    // Handle message updates (reactions, read status, recall)
+    messagesRef.on('child_changed', function(childSnap) {
+        var key = childSnap.key;
+        var msg = childSnap.val();
+        if (!msg) return;
+        msg._key = key;
+        for (var i = 0; i < allMessages.length; i++) {
+            if (allMessages[i]._key === key) {
+                allMessages[i] = msg;
+                break;
+            }
         }
         renderMessages();
         markMessagesRead();
     }, function(err) {
-        console.error('Firebase listen error:', err);
+        console.error('[Chat] child_changed error:', err);
     });
+
+    // Handle message deletion
+    messagesRef.on('child_removed', function(childSnap) {
+        var key = childSnap.key;
+        allMessages = allMessages.filter(function(m) { return m._key !== key; });
+        delete messageKeys[key];
+        renderMessages();
+    });
+
+    // Fallback: full sync every 30 seconds
+    if (fullSyncTimer) clearInterval(fullSyncTimer);
+    fullSyncTimer = setInterval(function() {
+        messagesRef.once('value', function(snap) {
+            var val = snap.val();
+            var fresh = [];
+            var freshKeys = {};
+            if (val) {
+                Object.keys(val).forEach(function(key) {
+                    var msg = val[key];
+                    msg._key = key;
+                    fresh.push(msg);
+                    freshKeys[key] = true;
+                });
+                fresh.sort(function(a, b) { return a.timestamp - b.timestamp; });
+            }
+            // Only re-render if data differs
+            if (fresh.length !== allMessages.length || JSON.stringify(fresh) !== JSON.stringify(allMessages)) {
+                allMessages = fresh;
+                messageKeys = freshKeys;
+                renderMessages();
+                markMessagesRead();
+                console.log('[Chat] Full sync completed, messages:', allMessages.length);
+            }
+        });
+    }, 30000);
 }
 
 var typingRef = null;
@@ -2186,10 +2270,12 @@ function sendMessage() {
         read: false
     };
 
-    var newRef = db.ref('miaomiao/messages').push(msg);
-    msg._key = newRef.key;
-    allMessages.push(msg);
-    renderMessages();
+    db.ref('miaomiao/messages').push(msg).then(function() {
+        console.log('[Chat] Message sent successfully');
+    }).catch(function(err) {
+        console.error('[Chat] Send failed:', err);
+        showToast('发送失败，请检查网络');
+    });
     input.value = '';
     clearTyping();
 

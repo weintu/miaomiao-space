@@ -1485,6 +1485,7 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var db = firebase.database();
 var connected = false;
+console.log('[Firebase] Initialized, db:', !!db, 'version:', firebase.SDK_VERSION || 'unknown');
 
 // Sync status indicator
 var syncDot = document.getElementById('syncDot');
@@ -2037,6 +2038,7 @@ function switchRole() {
 }
 
 function initChat() {
+    console.log('[Chat] initChat called, myRole:', myRole, 'db exists:', !!db);
     if (!myRole) {
         document.getElementById('msgRoleSetup').style.display = 'block';
         document.getElementById('msgChatArea').style.display = 'none';
@@ -2059,92 +2061,36 @@ function initChat() {
 }
 
 var messagesRef = null;
-var messageKeys = {};  // for deduplication
-var fullSyncTimer = null;
+var messagesInitialized = false;
 
 function listenMessages() {
-    // Remove old listeners
-    if (messagesRef) {
-        messagesRef.off('child_added');
-        messagesRef.off('child_changed');
-        messagesRef.off('child_removed');
-    }
-
-    messageKeys = {};
+    if (messagesRef) messagesRef.off();
     allMessages = [];
+    messagesInitialized = false;
 
     messagesRef = db.ref('miaomiao/messages');
+    console.log('[Chat] Attaching listener to miaomiao/messages');
 
-    // Primary: child_added — fires for each existing + new message
-    messagesRef.on('child_added', function(childSnap) {
-        var key = childSnap.key;
-        if (messageKeys[key]) return; // deduplicate
-        messageKeys[key] = true;
-
-        var msg = childSnap.val();
-        if (!msg) return;
-        msg._key = key;
-        allMessages.push(msg);
-        allMessages.sort(function(a, b) { return a.timestamp - b.timestamp; });
-        renderMessages();
-        markMessagesRead();
-        console.log('[Chat] child_added:', key, msg.text ? msg.text.substring(0, 20) : '(recalled)');
-    }, function(err) {
-        console.error('[Chat] child_added error:', err);
-    });
-
-    // Handle message updates (reactions, read status, recall)
-    messagesRef.on('child_changed', function(childSnap) {
-        var key = childSnap.key;
-        var msg = childSnap.val();
-        if (!msg) return;
-        msg._key = key;
-        for (var i = 0; i < allMessages.length; i++) {
-            if (allMessages[i]._key === key) {
-                allMessages[i] = msg;
-                break;
-            }
+    messagesRef.on('value', function(snap) {
+        console.log('[Chat] Listener fired, exists:', snap.exists(), 'val type:', typeof snap.val());
+        allMessages = [];
+        var val = snap.val();
+        if (val) {
+            var keys = Object.keys(val);
+            console.log('[Chat] Message count:', keys.length);
+            keys.forEach(function(key) {
+                var msg = val[key];
+                msg._key = key;
+                allMessages.push(msg);
+            });
+            allMessages.sort(function(a, b) { return (a.timestamp || 0) - (b.timestamp || 0); });
         }
+        messagesInitialized = true;
         renderMessages();
         markMessagesRead();
     }, function(err) {
-        console.error('[Chat] child_changed error:', err);
+        console.error('[Chat] Listener error:', err.code, err.message);
     });
-
-    // Handle message deletion
-    messagesRef.on('child_removed', function(childSnap) {
-        var key = childSnap.key;
-        allMessages = allMessages.filter(function(m) { return m._key !== key; });
-        delete messageKeys[key];
-        renderMessages();
-    });
-
-    // Fallback: full sync every 30 seconds
-    if (fullSyncTimer) clearInterval(fullSyncTimer);
-    fullSyncTimer = setInterval(function() {
-        messagesRef.once('value', function(snap) {
-            var val = snap.val();
-            var fresh = [];
-            var freshKeys = {};
-            if (val) {
-                Object.keys(val).forEach(function(key) {
-                    var msg = val[key];
-                    msg._key = key;
-                    fresh.push(msg);
-                    freshKeys[key] = true;
-                });
-                fresh.sort(function(a, b) { return a.timestamp - b.timestamp; });
-            }
-            // Only re-render if data differs
-            if (fresh.length !== allMessages.length || JSON.stringify(fresh) !== JSON.stringify(allMessages)) {
-                allMessages = fresh;
-                messageKeys = freshKeys;
-                renderMessages();
-                markMessagesRead();
-                console.log('[Chat] Full sync completed, messages:', allMessages.length);
-            }
-        });
-    }, 30000);
 }
 
 var typingRef = null;
@@ -2251,7 +2197,9 @@ function renderMessages() {
 function sendMessage() {
     var input = document.getElementById('chatInput');
     var text = input.value.trim();
-    if (!text || !myRole) return;
+    if (!text) { console.log('[Chat] Empty text'); return; }
+    if (!myRole) { console.log('[Chat] No role selected'); return; }
+    if (!db) { console.error('[Chat] db is null'); showToast('数据库未连接'); return; }
 
     var msg = {
         sender: myRole,
@@ -2260,11 +2208,15 @@ function sendMessage() {
         read: false
     };
 
-    db.ref('miaomiao/messages').push(msg).then(function() {
-        console.log('[Chat] Message sent successfully');
-    }).catch(function(err) {
-        console.error('[Chat] Send failed:', err);
-        showToast('发送失败，请检查网络');
+    console.log('[Chat] Sending message:', text);
+    var ref = db.ref('miaomiao/messages').push();
+    ref.set(msg, function(err) {
+        if (err) {
+            console.error('[Chat] Send error:', err);
+            showToast('发送失败: ' + err.message);
+        } else {
+            console.log('[Chat] Sent OK, key:', ref.key);
+        }
     });
     input.value = '';
     clearTyping();

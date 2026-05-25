@@ -1486,9 +1486,6 @@ firebase.initializeApp(firebaseConfig);
 var db = firebase.database();
 var connected = false;
 
-// Enable offline persistence
-db.goOnline();
-
 // Sync status indicator
 var syncDot = document.getElementById('syncDot');
 var syncText = document.getElementById('syncText');
@@ -2054,9 +2051,6 @@ function initChat() {
     var partner = getPartnerRole();
     document.getElementById('chatHeaderAvatar').innerHTML = getAvatarSVG(partner);
     document.getElementById('chatHeaderName').textContent = partner === 'boy' ? 'Boy 的留言板' : 'Girl 的留言板';
-
-    // Keep messages path synced
-    db.ref('miaomiao/messages').keepSynced(true);
 
     // Listen for messages
     listenMessages();

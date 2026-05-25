@@ -46,9 +46,19 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
-            max-width: 520px;
+            max-width: 100%;
+            width: 100%;
             margin: 0 auto;
             position: relative;
+        }
+        @media (min-width: 520px) {
+            .app { max-width: 520px; }
+        }
+        @media (min-width: 768px) {
+            .app { max-width: 560px; }
+        }
+        @media (min-width: 1024px) {
+            .app { max-width: 600px; }
         }
 
         /* ===== Top Header ===== */
@@ -753,11 +763,115 @@
         @keyframes f1 { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-15px) rotate(8deg)} }
         @keyframes f2 { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-12px) rotate(-6deg)} }
 
+        /* ===== Responsive ===== */
+
+        /* Small phones (<=360px) */
         @media (max-width: 360px) {
-            .card { padding: 16px; border-radius: 16px; }
-            .weather-temp { font-size: 42px; }
-            .weather-icon { font-size: 48px; }
-            .home-hero .big-cat { font-size: 56px; }
+            .card { padding: 14px; border-radius: 16px; margin-bottom: 10px; }
+            .card-title { font-size: 14px; margin-bottom: 10px; }
+            .top-header h1 { font-size: 16px; }
+            .top-header { padding: 10px 12px 8px; }
+            .home-hero { padding: 20px 12px; }
+            .home-hero .big-cat { font-size: 52px; }
+            .home-hero h2 { font-size: 20px; }
+            .home-hero .subtitle { font-size: 12px; }
+            .greeting-text { font-size: 13px; }
+            .love-box .love-days { font-size: 24px; }
+            .love-box .heart-icon { font-size: 26px; }
+            .home-tips { gap: 8px; }
+            .home-tip-item { padding: 10px; }
+            .home-tip-item .tip-icon { font-size: 24px; }
+            .home-tip-item .tip-text { font-size: 11px; }
+            .weather-temp { font-size: 38px; }
+            .weather-icon { font-size: 44px; }
+            .weather-detail-item { padding: 8px 4px; }
+            .weather-detail-item .value { font-size: 13px; }
+            .clothing-guide { padding: 12px; }
+            .clothing-title { font-size: 13px; }
+            .clothing-text { font-size: 13px; }
+            .cycle-ring { width: 130px; height: 130px; }
+            .cycle-ring svg { width: 130px; height: 130px; }
+            .cycle-ring .ring-day { font-size: 26px; }
+            .period-stat .stat-value { font-size: 18px; }
+            .period-row { flex-wrap: wrap; }
+            .period-row-label { width: 100%; }
+            .period-date-input { font-size: 13px; padding: 8px 10px; }
+            .period-btn { padding: 8px 12px; font-size: 12px; }
+            .todo-input { padding: 9px 12px; font-size: 13px; }
+            .todo-add-btn { padding: 9px 12px; min-width: 40px; font-size: 18px; }
+            .quick-btn { padding: 6px 10px; font-size: 11px; }
+            .todo-item { padding: 9px 10px; }
+            .todo-text { font-size: 13px; }
+            .tab-item .tab-icon { font-size: 20px; }
+            .tab-item .tab-label { font-size: 9px; }
+            .page { padding: 12px; }
+            .phase-name { font-size: 12px; padding: 4px 14px; }
+            .phase-desc { font-size: 11px; }
+            .care-section-title { font-size: 13px; }
+            .care-tip { font-size: 12px; padding: 8px 10px; }
+            .period-history-item { font-size: 12px; padding: 8px 10px; }
+            .deco { display: none; }
+        }
+
+        /* Regular phones (361-480px) */
+        @media (min-width: 361px) and (max-width: 480px) {
+            .card { padding: 18px; border-radius: 18px; }
+            .home-hero .big-cat { font-size: 64px; }
+            .home-hero h2 { font-size: 22px; }
+            .weather-temp { font-size: 46px; }
+            .weather-icon { font-size: 56px; }
+        }
+
+        /* Large phones / small tablets (481-767px) */
+        @media (min-width: 481px) and (max-width: 767px) {
+            .card { padding: 22px; }
+            .home-hero { padding: 36px 24px; }
+            .home-hero .big-cat { font-size: 80px; }
+            .home-hero h2 { font-size: 26px; }
+            .weather-temp { font-size: 56px; }
+            .weather-icon { font-size: 72px; }
+            .greeting-text { font-size: 16px; }
+            .love-box .love-days { font-size: 32px; }
+        }
+
+        /* Tablets (768px+) */
+        @media (min-width: 768px) {
+            body { display: flex; justify-content: center; }
+            .app { border-left: 1px solid rgba(255,255,255,0.3); border-right: 1px solid rgba(255,255,255,0.3); }
+            .card { padding: 24px; }
+            .home-hero { padding: 40px 28px; }
+            .home-hero .big-cat { font-size: 88px; }
+            .home-hero h2 { font-size: 28px; }
+            .greeting-text { font-size: 16px; }
+            .love-box .love-days { font-size: 34px; }
+            .weather-temp { font-size: 60px; }
+            .weather-icon { font-size: 76px; }
+            .tab-item .tab-icon { font-size: 26px; }
+            .tab-item .tab-label { font-size: 11px; }
+            .todo-input { font-size: 15px; }
+            .phase-name { font-size: 15px; }
+            .care-section-title { font-size: 15px; }
+        }
+
+        /* Landscape mode on phones */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .top-header { padding: 6px 12px 4px; }
+            .top-header h1 { font-size: 14px; }
+            .top-header h1 .cat { font-size: 16px; }
+            .home-hero { padding: 10px 12px; }
+            .home-hero .big-cat { font-size: 36px; }
+            .home-hero h2 { font-size: 16px; }
+            .home-hero .subtitle { display: none; }
+            .card { padding: 10px 14px; margin-bottom: 8px; }
+            .tab-bar { padding: 2px 0; }
+            .tab-item { padding: 3px 0; }
+            .deco { display: none; }
+        }
+
+        /* Safe area for notched phones */
+        @supports (padding-top: env(safe-area-inset-top)) {
+            .top-header { padding-top: calc(14px + env(safe-area-inset-top)); }
+            .tab-bar { padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
         }
     </style>
 </head>

@@ -1464,8 +1464,15 @@
 <div class="toast" id="toast"></div>
 
 <!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.8.0/firebase-app-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.8.0/firebase-database-compat.js"></script>
+<script>
+// Fallback: if Firebase didn't load, try gstatic CDN
+if (typeof firebase === 'undefined') {
+    document.write('<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"><\/script>');
+    document.write('<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"><\/script>');
+}
+</script>
 
 <script>
 // ==================== Firebase Config ====================
@@ -1482,12 +1489,19 @@ var firebaseConfig = {
 };
 
 // Initialize Firebase
-try {
-    firebase.initializeApp(firebaseConfig);
-} catch(e) {
-    console.error('Firebase init error:', e);
+// Check if Firebase loaded
+if (typeof firebase === 'undefined') {
+    document.getElementById('syncText').textContent = 'SDK加载失败';
+    document.getElementById('syncDot').className = 'sync-dot offline';
+    alert('Firebase SDK 加载失败，请检查网络连接后刷新页面');
+} else {
+    try {
+        firebase.initializeApp(firebaseConfig);
+    } catch(e) {
+        console.error('Firebase init error:', e);
+    }
 }
-var db = firebase.database();
+var db = typeof firebase !== 'undefined' ? firebase.database() : null;
 var connected = false;
 
 // Enable offline persistence

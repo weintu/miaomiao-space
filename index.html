@@ -1256,6 +1256,7 @@
             .todo-text { font-size: 13px; }
             .tab-item .tab-icon { font-size: 20px; }
             .tab-item .tab-label { font-size: 9px; }
+            .tab-item { padding: 4px 0; }
             .page { padding: 12px; }
             .phase-name { font-size: 12px; padding: 4px 14px; }
             .phase-desc { font-size: 11px; }
@@ -1263,6 +1264,39 @@
             .care-tip { font-size: 12px; padding: 8px 10px; }
             .period-history-item { font-size: 12px; padding: 8px 10px; }
             .deco { display: none; }
+
+            /* Sweet page responsive */
+            .countdown-add-row { flex-direction: column; }
+            .countdown-emoji-input { width: 100%; }
+            .countdown-input { min-width: 100%; }
+            .countdown-add-btn { width: 100%; }
+            .countdown-item { padding: 10px; gap: 8px; }
+            .countdown-emoji { font-size: 24px; }
+            .countdown-title { font-size: 13px; }
+            .countdown-days .days-num { font-size: 20px; }
+
+            .mood-today { gap: 6px; }
+            .mood-btn { padding: 8px 8px; min-width: 48px; }
+            .mood-btn .mood-emoji { font-size: 24px; }
+            .mood-btn .mood-label { font-size: 9px; }
+            .mood-person { padding: 10px 8px; }
+            .mood-person .person-emoji { font-size: 28px; }
+            .mood-day { padding: 4px 1px; }
+            .mood-day .day-emoji { font-size: 14px; }
+
+            .wish-input-row { flex-direction: column; }
+            .wish-input { min-width: 100%; }
+            .wish-add-btn { width: 100%; }
+            .wish-item { padding: 9px 10px; gap: 8px; }
+            .wish-icon { font-size: 18px; }
+            .wish-text { font-size: 13px; }
+            .wish-action-btn { padding: 4px 8px; font-size: 10px; }
+
+            .quote-input-row { flex-direction: column; }
+            .quote-input { min-width: 100%; }
+            .quote-add-btn { width: 100%; }
+            .quote-text { font-size: 14px; }
+            .quote-jar-item { font-size: 12px; padding: 6px 10px; }
         }
 
         /* Regular phones (361-480px) */
@@ -2513,7 +2547,9 @@ function sendMessage() {
 }
 
 function markMessagesRead() {
-    if (!chatActive || !myRole) return;
+    if (!myRole) return;
+    // If chat is not active, don't mark messages as read
+    if (!chatActive) return;
     var unreadCount = 0;
     allMessages.forEach(function(msg) {
         if (msg.sender !== myRole && !msg.read) {
@@ -2521,9 +2557,9 @@ function markMessagesRead() {
             unreadCount++;
         }
     });
-    if (unreadCount > 0) {
-        db.ref('miaomiao/unread/' + myRole).set(0);
-    }
+    // Always clear unread count when viewing chat, even if no new unread messages
+    // This handles the case where unread count in DB is stale
+    db.ref('miaomiao/unread/' + myRole).set(0);
 }
 
 var unreadRef = null;
@@ -2535,7 +2571,14 @@ function listenUnread() {
     unreadRef.on('value', function(snap) {
         var count = snap.val() || 0;
         var badge = document.getElementById('msgUnreadBadge');
-        badge.textContent = count > 0 ? (count > 99 ? '99+' : count) : '';
+        // If chat is active, always hide badge (messages are being viewed)
+        if (chatActive) {
+            badge.textContent = '';
+            // Also clear the unread count in Firebase
+            db.ref('miaomiao/unread/' + myRole).set(0);
+        } else {
+            badge.textContent = count > 0 ? (count > 99 ? '99+' : count) : '';
+        }
     });
 }
 

@@ -1171,6 +1171,273 @@
         .quote-jar-item .jar-author { font-size: 10px; color: var(--gray-400); }
         .quote-jar-empty { text-align: center; padding: 16px; color: var(--gray-400); font-size: 12px; }
 
+        /* ===== Password Lock ===== */
+        .lock-screen {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 30%, #e1bee7 70%, #fce4ec 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999; transition: opacity 0.5s ease;
+        }
+        .lock-screen.hidden { opacity: 0; pointer-events: none; }
+        .lock-icon { font-size: 64px; margin-bottom: 20px; animation: heartBeat 2s ease-in-out infinite; }
+        .lock-title { font-size: 20px; font-weight: 700; color: var(--pink-600); margin-bottom: 8px; }
+        .lock-subtitle { font-size: 13px; color: var(--gray-400); margin-bottom: 24px; }
+        .lock-input {
+            width: 200px; padding: 12px 16px; border: 2px solid var(--pink-200);
+            border-radius: 16px; font-size: 18px; text-align: center; letter-spacing: 8px;
+            outline: none; background: rgba(255,255,255,0.8); font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        .lock-input:focus { border-color: var(--pink-400); }
+        .lock-btn {
+            margin-top: 16px; padding: 10px 32px; background: linear-gradient(135deg, var(--pink-400), var(--pink-500));
+            color: white; border: none; border-radius: 14px; font-size: 14px;
+            cursor: pointer; font-family: inherit; transition: all 0.2s;
+        }
+        .lock-btn:hover { transform: translateY(-1px); }
+        .lock-error { font-size: 12px; color: #ef4444; margin-top: 8px; min-height: 18px; }
+        .lock-setup-hint { font-size: 12px; color: var(--gray-400); margin-top: 16px; }
+
+        /* ===== Settings Page ===== */
+        .settings-section { margin-bottom: 20px; }
+        .settings-label {
+            font-size: 12px; color: var(--gray-400); margin-bottom: 6px; font-weight: 500;
+        }
+        .settings-input {
+            width: 100%; padding: 10px 14px; border: 2px solid var(--pink-200);
+            border-radius: 14px; font-size: 14px; font-family: inherit;
+            outline: none; background: rgba(255,255,255,0.8); transition: border-color 0.2s;
+        }
+        .settings-input:focus { border-color: var(--pink-400); }
+        .settings-row {
+            display: flex; gap: 12px; margin-bottom: 12px;
+        }
+        .settings-row .settings-field { flex: 1; }
+        .emoji-avatar-picker {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
+        }
+        .emoji-avatar-option {
+            width: 44px; height: 44px; font-size: 24px; border: 2px solid var(--pink-100);
+            border-radius: 12px; background: rgba(255,255,255,0.8); cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+        }
+        .emoji-avatar-option.selected { border-color: var(--pink-400); background: var(--pink-50); }
+        .theme-colors {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
+        }
+        .theme-color-option {
+            width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+            border: 3px solid transparent; transition: all 0.2s;
+        }
+        .theme-color-option.selected { border-color: var(--gray-700); transform: scale(1.1); }
+        .settings-save-btn {
+            width: 100%; padding: 12px; background: linear-gradient(135deg, var(--pink-400), var(--pink-500));
+            color: white; border: none; border-radius: 14px; font-size: 15px;
+            cursor: pointer; font-family: inherit; font-weight: 600; transition: all 0.2s;
+        }
+        .settings-save-btn:hover { transform: translateY(-1px); }
+        .privacy-toggle {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 14px; background: rgba(255,255,255,0.6); border-radius: 14px;
+            margin-bottom: 10px;
+        }
+        .privacy-toggle-label { font-size: 14px; color: var(--gray-700); }
+        .privacy-toggle-desc { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+        .toggle-switch {
+            width: 48px; height: 28px; background: var(--gray-200); border-radius: 14px;
+            position: relative; cursor: pointer; transition: background 0.3s; flex-shrink: 0;
+        }
+        .toggle-switch.on { background: var(--pink-400); }
+        .toggle-switch::after {
+            content: ''; position: absolute; top: 3px; left: 3px;
+            width: 22px; height: 22px; background: white; border-radius: 50%;
+            transition: transform 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .toggle-switch.on::after { transform: translateX(20px); }
+        .blur-content { filter: blur(6px); transition: filter 0.3s; cursor: pointer; }
+        .blur-content.revealed { filter: none; }
+
+        /* ===== More Page (Menu) ===== */
+        .more-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+        }
+        .more-item {
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            padding: 20px 12px; background: rgba(255,255,255,0.7); border-radius: 16px;
+            cursor: pointer; transition: all 0.2s; border: 1.5px solid transparent;
+        }
+        .more-item:active { transform: scale(0.96); }
+        .more-item:hover { border-color: var(--pink-200); background: rgba(255,255,255,0.9); }
+        .more-item .more-icon { font-size: 32px; }
+        .more-item .more-label { font-size: 14px; font-weight: 600; color: var(--gray-700); }
+        .more-item .more-desc { font-size: 11px; color: var(--gray-400); text-align: center; }
+
+        /* ===== Timeline ===== */
+        .timeline-container { position: relative; padding-left: 28px; }
+        .timeline-container::before {
+            content: ''; position: absolute; left: 12px; top: 0; bottom: 0;
+            width: 2px; background: linear-gradient(to bottom, var(--pink-200), var(--purple-100));
+        }
+        .timeline-item {
+            position: relative; margin-bottom: 16px; padding: 14px;
+            background: rgba(255,255,255,0.7); border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.6); transition: all 0.2s;
+        }
+        .timeline-item::before {
+            content: ''; position: absolute; left: -22px; top: 18px;
+            width: 12px; height: 12px; border-radius: 50%;
+            background: var(--pink-400); border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .timeline-item .tl-date { font-size: 11px; color: var(--pink-400); font-weight: 600; margin-bottom: 6px; }
+        .timeline-item .tl-title { font-size: 15px; font-weight: 600; color: var(--gray-700); margin-bottom: 4px; }
+        .timeline-item .tl-text { font-size: 13px; color: var(--gray-500); line-height: 1.6; }
+        .timeline-item .tl-emoji { font-size: 20px; margin-right: 6px; }
+        .timeline-item .tl-image {
+            width: 100%; max-height: 200px; object-fit: cover; border-radius: 12px;
+            margin-top: 8px;
+        }
+        .timeline-item .tl-source {
+            display: inline-block; margin-top: 8px; padding: 3px 8px;
+            background: var(--pink-50); border-radius: 8px; font-size: 10px; color: var(--pink-500);
+        }
+        .timeline-add-form { margin-top: 12px; }
+        .timeline-add-form .form-row { margin-bottom: 10px; }
+        .timeline-add-form input, .timeline-add-form textarea {
+            width: 100%; padding: 10px 14px; border: 2px solid var(--pink-200);
+            border-radius: 14px; font-size: 13px; font-family: inherit;
+            outline: none; background: rgba(255,255,255,0.8); transition: border-color 0.2s;
+        }
+        .timeline-add-form textarea { min-height: 80px; resize: vertical; }
+        .timeline-add-form input:focus, .timeline-add-form textarea:focus { border-color: var(--pink-400); }
+        .timeline-empty {
+            text-align: center; padding: 40px 20px; color: var(--gray-400);
+        }
+        .timeline-empty .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+        /* ===== Time Capsule ===== */
+        .capsule-item {
+            padding: 16px; background: rgba(255,255,255,0.7); border-radius: 16px;
+            margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.6);
+            transition: all 0.3s;
+        }
+        .capsule-item.locked {
+            background: repeating-linear-gradient(
+                45deg, rgba(255,255,255,0.7), rgba(255,255,255,0.7) 10px, rgba(236,72,153,0.03) 10px, rgba(236,72,153,0.03) 20px
+            );
+        }
+        .capsule-item.unlocked { border-color: var(--pink-300); }
+        .capsule-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .capsule-icon { font-size: 28px; }
+        .capsule-title { font-size: 15px; font-weight: 600; color: var(--gray-700); flex: 1; }
+        .capsule-date { font-size: 11px; color: var(--gray-400); }
+        .capsule-countdown {
+            display: flex; gap: 8px; margin: 12px 0;
+        }
+        .capsule-countdown-item {
+            text-align: center; padding: 8px 12px; background: rgba(255,255,255,0.8);
+            border-radius: 12px; min-width: 50px;
+        }
+        .capsule-countdown-item .countdown-num { font-size: 20px; font-weight: 700; color: var(--pink-500); }
+        .capsule-countdown-item .countdown-label { font-size: 10px; color: var(--gray-400); }
+        .capsule-locked-hint { font-size: 12px; color: var(--gray-400); text-align: center; padding: 12px; }
+        .capsule-content {
+            padding: 14px; background: linear-gradient(135deg, rgba(236,72,153,0.05), rgba(168,85,247,0.05));
+            border-radius: 14px; font-size: 14px; color: var(--gray-600); line-height: 1.8;
+        }
+        .capsule-open-btn {
+            width: 100%; padding: 12px; background: linear-gradient(135deg, var(--pink-400), var(--pink-500));
+            color: white; border: none; border-radius: 14px; font-size: 14px;
+            cursor: pointer; font-family: inherit; font-weight: 600; transition: all 0.2s;
+            margin-top: 10px;
+        }
+        .capsule-open-btn:hover { transform: translateY(-1px); }
+        @keyframes capsuleOpen {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .capsule-content.opening { animation: capsuleOpen 0.6s ease-out; }
+        .capsule-from { font-size: 11px; color: var(--pink-400); margin-top: 8px; text-align: right; }
+        .capsule-empty {
+            text-align: center; padding: 40px 20px; color: var(--gray-400);
+        }
+        .capsule-empty .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+        /* ===== Daily Task ===== */
+        .task-card {
+            text-align: center; padding: 24px;
+            background: linear-gradient(135deg, rgba(236,72,153,0.08), rgba(168,85,247,0.08));
+            border-radius: 20px; margin-bottom: 16px;
+        }
+        .task-card .task-emoji { font-size: 48px; margin-bottom: 12px; }
+        .task-card .task-category {
+            display: inline-block; padding: 4px 12px; background: rgba(255,255,255,0.8);
+            border-radius: 10px; font-size: 11px; color: var(--pink-500); margin-bottom: 10px;
+        }
+        .task-card .task-text { font-size: 18px; font-weight: 600; color: var(--gray-700); line-height: 1.5; }
+        .task-streak {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 12px; background: rgba(255,255,255,0.7); border-radius: 14px;
+            margin-bottom: 16px;
+        }
+        .task-streak .streak-num { font-size: 24px; font-weight: 700; color: var(--pink-500); }
+        .task-streak .streak-label { font-size: 13px; color: var(--gray-500); }
+        .task-streak .streak-fire { font-size: 24px; }
+        .task-actions { display: flex; gap: 10px; }
+        .task-action-btn {
+            flex: 1; padding: 12px; border: 2px solid var(--pink-200); border-radius: 14px;
+            background: rgba(255,255,255,0.8); font-size: 14px; cursor: pointer;
+            font-family: inherit; color: var(--gray-600); transition: all 0.2s;
+        }
+        .task-action-btn:hover { background: var(--pink-50); border-color: var(--pink-300); }
+        .task-action-btn.primary {
+            background: linear-gradient(135deg, var(--pink-400), var(--pink-500));
+            color: white; border: none;
+        }
+        .task-action-btn.primary:hover { transform: translateY(-1px); }
+        .task-history { margin-top: 16px; }
+        .task-history-title { font-size: 13px; font-weight: 600; color: var(--gray-500); margin-bottom: 8px; }
+        .task-history-item {
+            display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+            background: rgba(255,255,255,0.5); border-radius: 12px; margin-bottom: 6px;
+        }
+        .task-history-item .history-date { font-size: 11px; color: var(--gray-400); min-width: 60px; }
+        .task-history-item .history-text { font-size: 13px; color: var(--gray-600); flex: 1; }
+        .task-history-item .history-check { color: #22c55e; }
+
+        /* ===== Period Enhancement ===== */
+        .period-symptoms {
+            display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;
+        }
+        .symptom-tag {
+            padding: 6px 12px; border: 1.5px solid var(--pink-200); border-radius: 20px;
+            background: rgba(255,255,255,0.6); font-size: 12px; cursor: pointer;
+            font-family: inherit; color: var(--gray-600); transition: all 0.2s;
+        }
+        .symptom-tag.selected { background: var(--pink-50); border-color: var(--pink-400); color: var(--pink-500); }
+        .pain-level {
+            display: flex; gap: 6px; margin-bottom: 12px;
+        }
+        .pain-btn {
+            flex: 1; padding: 8px; text-align: center; border: 1.5px solid var(--pink-200);
+            border-radius: 10px; background: rgba(255,255,255,0.6); cursor: pointer;
+            font-family: inherit; transition: all 0.2s;
+        }
+        .pain-btn.selected { background: var(--pink-50); border-color: var(--pink-400); }
+        .pain-btn .pain-num { font-size: 16px; font-weight: 600; color: var(--gray-700); }
+        .pain-btn .pain-label { font-size: 9px; color: var(--gray-400); }
+        .care-tips {
+            padding: 14px; background: linear-gradient(135deg, rgba(236,72,153,0.06), rgba(168,85,247,0.06));
+            border-radius: 14px; margin-top: 12px;
+        }
+        .care-tips-title { font-size: 13px; font-weight: 600; color: var(--pink-500); margin-bottom: 8px; }
+        .care-tip-item { font-size: 13px; color: var(--gray-600); padding: 4px 0; }
+        .period-disclaimer {
+            font-size: 11px; color: var(--gray-400); text-align: center; padding: 10px;
+            margin-top: 12px; background: rgba(255,255,255,0.4); border-radius: 10px;
+        }
+
         /* ===== Sync Status ===== */
         .sync-status {
             display: inline-flex;
@@ -1297,6 +1564,36 @@
             .quote-add-btn { width: 100%; }
             .quote-text { font-size: 14px; }
             .quote-jar-item { font-size: 12px; padding: 6px 10px; }
+
+            /* More page responsive */
+            .more-grid { gap: 8px; }
+            .more-item { padding: 14px 8px; }
+            .more-item .more-icon { font-size: 28px; }
+            .more-item .more-label { font-size: 13px; }
+            .more-item .more-desc { font-size: 10px; }
+
+            /* Timeline responsive */
+            .timeline-container { padding-left: 22px; }
+            .timeline-item { padding: 10px; }
+            .timeline-item .tl-title { font-size: 14px; }
+            .timeline-item .tl-text { font-size: 12px; }
+            .timeline-add-form input, .timeline-add-form textarea { font-size: 12px; padding: 8px 10px; }
+
+            /* Capsule responsive */
+            .capsule-item { padding: 12px; }
+            .capsule-title { font-size: 14px; }
+            .capsule-countdown-item .countdown-num { font-size: 18px; }
+
+            /* Task responsive */
+            .task-card { padding: 16px; }
+            .task-card .task-emoji { font-size: 40px; }
+            .task-card .task-text { font-size: 16px; }
+            .task-streak .streak-num { font-size: 20px; }
+
+            /* Settings responsive */
+            .settings-row { flex-direction: column; gap: 8px; }
+            .emoji-avatar-option { width: 38px; height: 38px; font-size: 20px; }
+            .theme-color-option { width: 30px; height: 30px; }
         }
 
         /* Regular phones (361-480px) */
@@ -1741,6 +2038,187 @@
                 <div class="quote-jar" id="quoteJar"></div>
             </div>
         </div>
+
+        <!-- MORE -->
+        <div class="page" id="pageMore">
+            <div class="card">
+                <div class="card-title"><span class="icon">&#128295;</span> 更多功能</div>
+                <div class="more-grid">
+                    <div class="more-item" onclick="switchTab('timeline')">
+                        <span class="more-icon">&#128247;</span>
+                        <span class="more-label">回忆时间线</span>
+                        <span class="more-desc">记录我们的美好瞬间</span>
+                    </div>
+                    <div class="more-item" onclick="switchTab('capsule')">
+                        <span class="more-icon">&#128230;</span>
+                        <span class="more-label">时光胶囊</span>
+                        <span class="more-desc">写给未来的彼此</span>
+                    </div>
+                    <div class="more-item" onclick="switchTab('task')">
+                        <span class="more-icon">&#127873;</span>
+                        <span class="more-label">约会盲盒</span>
+                        <span class="more-desc">每日甜蜜小任务</span>
+                    </div>
+                    <div class="more-item" onclick="switchTab('settings')">
+                        <span class="more-icon">&#9881;</span>
+                        <span class="more-label">设置</span>
+                        <span class="more-desc">个性化配置</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TIMELINE -->
+        <div class="page" id="pageTimeline">
+            <div class="card">
+                <div class="card-title"><span class="icon">&#128247;</span> 回忆时间线</div>
+                <div id="timelineList"></div>
+                <div class="timeline-add-form" id="timelineForm" style="display:none">
+                    <div class="form-row">
+                        <input type="text" id="timelineEmoji" placeholder="表情 (可选)" maxlength="2" style="width:60px;display:inline-block">
+                        <input type="text" id="timelineTitle" placeholder="回忆标题" style="width:calc(100% - 70px);display:inline-block">
+                    </div>
+                    <div class="form-row">
+                        <input type="date" id="timelineDate">
+                    </div>
+                    <div class="form-row">
+                        <textarea id="timelineText" placeholder="写下这段回忆..."></textarea>
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="timelineImage" placeholder="图片链接 (可选)">
+                    </div>
+                    <div style="display:flex;gap:8px">
+                        <button class="countdown-add-btn" style="flex:1" onclick="saveTimeline()">保存回忆</button>
+                        <button class="countdown-add-btn" style="flex:1;background:var(--gray-200);color:var(--gray-600)" onclick="toggleTimelineForm()">取消</button>
+                    </div>
+                </div>
+                <button class="countdown-add-btn" style="width:100%;margin-top:12px" id="timelineAddBtn" onclick="toggleTimelineForm()">&#10010; 添加回忆</button>
+            </div>
+        </div>
+
+        <!-- TIME CAPSULE -->
+        <div class="page" id="pageCapsule">
+            <div class="card">
+                <div class="card-title"><span class="icon">&#128230;</span> 时光胶囊</div>
+                <div id="capsuleList"></div>
+                <div class="timeline-add-form" id="capsuleForm" style="display:none">
+                    <div class="form-row">
+                        <input type="text" id="capsuleTitle" placeholder="胶囊标题">
+                    </div>
+                    <div class="form-row">
+                        <input type="date" id="capsuleUnlockDate" placeholder="解锁日期">
+                    </div>
+                    <div class="form-row">
+                        <textarea id="capsuleContent" placeholder="写给未来的 TA..."></textarea>
+                    </div>
+                    <div style="display:flex;gap:8px">
+                        <button class="countdown-add-btn" style="flex:1" onclick="saveCapsule()">封存胶囊</button>
+                        <button class="countdown-add-btn" style="flex:1;background:var(--gray-200);color:var(--gray-600)" onclick="toggleCapsuleForm()">取消</button>
+                    </div>
+                </div>
+                <button class="countdown-add-btn" style="width:100%;margin-top:12px" id="capsuleAddBtn" onclick="toggleCapsuleForm()">&#10010; 写一封时光胶囊</button>
+            </div>
+        </div>
+
+        <!-- DAILY TASK -->
+        <div class="page" id="pageTask">
+            <div class="card">
+                <div class="card-title"><span class="icon">&#127873;</span> 约会盲盒</div>
+                <div class="task-card" id="taskCard">
+                    <div class="task-emoji" id="taskEmoji">&#127873;</div>
+                    <div class="task-category" id="taskCategory">点击抽取</div>
+                    <div class="task-text" id="taskText">点击下方按钮，抽取今日甜蜜任务</div>
+                </div>
+                <div class="task-streak" id="taskStreak" style="display:none">
+                    <span class="streak-fire">&#128293;</span>
+                    <span class="streak-num" id="streakNum">0</span>
+                    <span class="streak-label">天连续打卡</span>
+                </div>
+                <div class="task-actions">
+                    <button class="task-action-btn" onclick="drawTask()">&#127922; 抽取任务</button>
+                    <button class="task-action-btn primary" id="taskCompleteBtn" onclick="completeTask()" style="display:none">&#10003; 完成打卡</button>
+                </div>
+                <div class="task-history" id="taskHistory"></div>
+            </div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div class="page" id="pageSettings">
+            <div class="card">
+                <div class="card-title"><span class="icon">&#9881;</span> 基本设置</div>
+                <div class="settings-section">
+                    <div class="settings-label">我们的昵称</div>
+                    <div class="settings-row">
+                        <div class="settings-field">
+                            <input type="text" class="settings-input" id="settingsBoyName" placeholder="他的昵称">
+                        </div>
+                        <div class="settings-field">
+                            <input type="text" class="settings-input" id="settingsGirlName" placeholder="她的昵称">
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-label">选择头像</div>
+                    <div style="margin-bottom:8px">
+                        <span style="font-size:12px;color:var(--gray-400)">他的头像</span>
+                        <div class="emoji-avatar-picker" id="boyAvatarPicker"></div>
+                    </div>
+                    <div>
+                        <span style="font-size:12px;color:var(--gray-400)">她的头像</span>
+                        <div class="emoji-avatar-picker" id="girlAvatarPicker"></div>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-label">恋爱开始日期</div>
+                    <input type="date" class="settings-input" id="settingsLoveDate">
+                </div>
+                <div class="settings-section">
+                    <div class="settings-label">所在城市</div>
+                    <input type="text" class="settings-input" id="settingsCity" placeholder="例如：宝鸡">
+                </div>
+                <div class="settings-section">
+                    <div class="settings-label">主题色</div>
+                    <div class="theme-colors" id="themeColorPicker"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><span class="icon">&#128274;</span> 隐私与安全</div>
+                <div class="privacy-toggle">
+                    <div>
+                        <div class="privacy-toggle-label">访问密码锁</div>
+                        <div class="privacy-toggle-desc">进入网站需要输入密码</div>
+                    </div>
+                    <div class="toggle-switch" id="lockToggle" onclick="toggleLock()"></div>
+                </div>
+                <div id="lockPasswordSection" style="display:none">
+                    <div class="settings-section" style="margin-top:12px">
+                        <div class="settings-label">设置密码 (4-6位数字)</div>
+                        <input type="password" class="settings-input" id="settingsLockPassword" placeholder="输入密码" maxlength="6" style="letter-spacing:4px">
+                    </div>
+                </div>
+                <div class="privacy-toggle">
+                    <div>
+                        <div class="privacy-toggle-label">隐藏敏感信息</div>
+                        <div class="privacy-toggle-desc">经期和聊天内容默认模糊</div>
+                    </div>
+                    <div class="toggle-switch" id="blurToggle" onclick="toggleBlurMode()"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><span class="icon">&#128221;</span> 数据管理</div>
+                <button class="settings-save-btn" style="margin-bottom:10px" onclick="exportData()">&#128190; 导出数据</button>
+                <button class="settings-save-btn" style="background:var(--gray-200);color:var(--gray-600)" onclick="confirmResetData()">&#128465; 清除所有数据</button>
+            </div>
+
+            <button class="settings-save-btn" style="margin-bottom:20px" onclick="saveSettings()">&#128190; 保存设置</button>
+
+            <div class="card">
+                <div class="card-title"><span class="icon">&#128221;</span> Firebase 安全规则建议</div>
+                <div style="background:var(--gray-50);padding:12px;border-radius:10px;font-size:11px;font-family:monospace;overflow-x:auto;white-space:pre;color:var(--gray-600)" id="firebaseRules"></div>
+            </div>
+        </div>
     </div>
 
     <!-- Bottom Tab Bar -->
@@ -1769,6 +2247,10 @@
         <button class="tab-item" data-tab="sweet" onclick="switchTab('sweet')">
             <span class="tab-icon">&#128150;</span>
             <span class="tab-label">甜蜜</span>
+        </button>
+        <button class="tab-item" data-tab="more" onclick="switchTab('more')">
+            <span class="tab-icon">&#128295;</span>
+            <span class="tab-label">更多</span>
         </button>
     </div>
 </div>
@@ -1823,7 +2305,7 @@ setInterval(function() {
 function switchTab(name) {
     var pages = document.querySelectorAll('.page');
     var tabs = document.querySelectorAll('.tab-item');
-    var pageMap = { home: 'pageHome', weather: 'pageWeather', period: 'pagePeriod', todo: 'pageTodo', message: 'pageMessage', sweet: 'pageSweet' };
+    var pageMap = { home: 'pageHome', weather: 'pageWeather', period: 'pagePeriod', todo: 'pageTodo', message: 'pageMessage', sweet: 'pageSweet', more: 'pageMore', timeline: 'pageTimeline', capsule: 'pageCapsule', task: 'pageTask', settings: 'pageSettings' };
 
     pages.forEach(function(p) { p.classList.remove('active'); });
     tabs.forEach(function(t) { t.classList.remove('active'); });
@@ -1845,15 +2327,16 @@ function updateDate() {
 
 function updateGreeting() {
     var hour = new Date().getHours();
+    var name = appSettings.boyName || '苗苗';
     var g = '';
-    if (hour < 6) g = '夜深了，<span class="hl">苗苗</span>要注意休息哦';
-    else if (hour < 9) g = '早安，<span class="hl">苗苗</span>！新的一天开始了，要元气满满哦';
-    else if (hour < 12) g = '上午好，<span class="hl">苗苗</span>！记得喝水，保持好心情';
-    else if (hour < 14) g = '中午好，<span class="hl">苗苗</span>！该吃午饭了，别亏待自己';
-    else if (hour < 17) g = '下午好，<span class="hl">苗苗</span>！来杯下午茶放松一下吧';
-    else if (hour < 19) g = '傍晚好，<span class="hl">苗苗</span>！辛苦了一天，该放松啦';
-    else if (hour < 22) g = '晚上好，<span class="hl">苗苗</span>！记得护肤，早点休息';
-    else g = '夜深了，<span class="hl">苗苗</span>！早点睡觉，做个好梦';
+    if (hour < 6) g = '夜深了，<span class="hl">' + name + '</span>要注意休息哦';
+    else if (hour < 9) g = '早安，<span class="hl">' + name + '</span>！新的一天开始了，要元气满满哦';
+    else if (hour < 12) g = '上午好，<span class="hl">' + name + '</span>！记得喝水，保持好心情';
+    else if (hour < 14) g = '中午好，<span class="hl">' + name + '</span>！该吃午饭了，别亏待自己';
+    else if (hour < 17) g = '下午好，<span class="hl">' + name + '</span>！来杯下午茶放松一下吧';
+    else if (hour < 19) g = '傍晚好，<span class="hl">' + name + '</span>！辛苦了一天，该放松啦';
+    else if (hour < 22) g = '晚上好，<span class="hl">' + name + '</span>！记得护肤，早点休息';
+    else g = '夜深了，<span class="hl">' + name + '</span>！早点睡觉，做个好梦';
     document.getElementById('greetingText').innerHTML = g;
 }
 
@@ -3121,8 +3604,539 @@ function renderQuoteJar() {
     container.innerHTML = html;
 }
 
+// ==================== Settings ====================
+var appSettings = {
+    boyName: 'Boy', girlName: 'Girl',
+    boyAvatar: '&#128102;', girlAvatar: '&#128103;',
+    loveDate: '', city: '宝鸡',
+    themeColor: '#ec4899',
+    lockEnabled: false, lockPassword: '',
+    blurEnabled: false
+};
+
+var avatarOptions = ['&#128102;','&#128103;','&#128049;','&#128054;','&#128048;','&#128059;','&#129412;','&#128156;','&#127752;','&#127769;','&#128171;','&#129505;'];
+var themeColors = ['#ec4899','#f43f5e','#a855f7','#6366f1','#3b82f6','#0ea5e9','#14b8a6','#22c55e','#eab308','#f97316'];
+
+function loadSettings() {
+    var saved = localStorage.getItem('miaomiao_settings');
+    if (saved) {
+        try { Object.assign(appSettings, JSON.parse(saved)); } catch(e) {}
+    }
+    applySettings();
+}
+
+function applySettings() {
+    // Update greeting with names
+    updateGreeting();
+    // Update header title
+    var h1 = document.querySelector('.top-header h1');
+    if (h1) h1.innerHTML = '<span class="cat">&#128049;</span> ' + appSettings.boyName + ' & ' + appSettings.girlName;
+    // Update love days if date changed
+    if (appSettings.loveDate) {
+        db.ref('miaomiao/loveStart').once('value', function(snap) {
+            if (snap.val() !== appSettings.loveDate) {
+                db.ref('miaomiao/loveStart').set(appSettings.loveDate);
+            }
+        });
+    }
+    // Apply theme color
+    document.documentElement.style.setProperty('--pink-400', appSettings.themeColor);
+    document.documentElement.style.setProperty('--pink-500', appSettings.themeColor);
+    // Apply lock
+    if (appSettings.lockEnabled && appSettings.lockPassword) {
+        checkLock();
+    }
+    // Apply blur mode
+    if (appSettings.blurEnabled) {
+        document.body.classList.add('blur-mode');
+    }
+}
+
+function saveSettings() {
+    appSettings.boyName = document.getElementById('settingsBoyName').value.trim() || 'Boy';
+    appSettings.girlName = document.getElementById('settingsGirlName').value.trim() || 'Girl';
+    appSettings.loveDate = document.getElementById('settingsLoveDate').value;
+    appSettings.city = document.getElementById('settingsCity').value.trim() || '宝鸡';
+    appSettings.lockEnabled = document.getElementById('lockToggle').classList.contains('on');
+    appSettings.blurEnabled = document.getElementById('blurToggle').classList.contains('on');
+    var pwdInput = document.getElementById('settingsLockPassword').value;
+    if (pwdInput && pwdInput.length >= 4) {
+        appSettings.lockPassword = pwdInput;
+    }
+    localStorage.setItem('miaomiao_settings', JSON.stringify(appSettings));
+    applySettings();
+    showToast('设置已保存');
+    // Sync to Firebase
+    db.ref('miaomiao/settings').set(appSettings);
+}
+
+function initSettingsPage() {
+    document.getElementById('settingsBoyName').value = appSettings.boyName;
+    document.getElementById('settingsGirlName').value = appSettings.girlName;
+    document.getElementById('settingsLoveDate').value = appSettings.loveDate;
+    document.getElementById('settingsCity').value = appSettings.city;
+    // Avatar pickers
+    var boyPicker = document.getElementById('boyAvatarPicker');
+    var girlPicker = document.getElementById('girlAvatarPicker');
+    boyPicker.innerHTML = '';
+    girlPicker.innerHTML = '';
+    avatarOptions.forEach(function(a) {
+        var bBtn = document.createElement('div');
+        bBtn.className = 'emoji-avatar-option' + (a === appSettings.boyAvatar ? ' selected' : '');
+        bBtn.innerHTML = a;
+        bBtn.onclick = function() {
+            appSettings.boyAvatar = a;
+            boyPicker.querySelectorAll('.emoji-avatar-option').forEach(function(e){e.classList.remove('selected')});
+            bBtn.classList.add('selected');
+        };
+        boyPicker.appendChild(bBtn);
+        var gBtn = document.createElement('div');
+        gBtn.className = 'emoji-avatar-option' + (a === appSettings.girlAvatar ? ' selected' : '');
+        gBtn.innerHTML = a;
+        gBtn.onclick = function() {
+            appSettings.girlAvatar = a;
+            girlPicker.querySelectorAll('.emoji-avatar-option').forEach(function(e){e.classList.remove('selected')});
+            gBtn.classList.add('selected');
+        };
+        girlPicker.appendChild(gBtn);
+    });
+    // Theme colors
+    var colorPicker = document.getElementById('themeColorPicker');
+    colorPicker.innerHTML = '';
+    themeColors.forEach(function(c) {
+        var btn = document.createElement('div');
+        btn.className = 'theme-color-option' + (c === appSettings.themeColor ? ' selected' : '');
+        btn.style.background = c;
+        btn.onclick = function() {
+            appSettings.themeColor = c;
+            colorPicker.querySelectorAll('.theme-color-option').forEach(function(e){e.classList.remove('selected')});
+            btn.classList.add('selected');
+        };
+        colorPicker.appendChild(btn);
+    });
+    // Lock toggle
+    var lockToggle = document.getElementById('lockToggle');
+    lockToggle.classList.toggle('on', appSettings.lockEnabled);
+    document.getElementById('lockPasswordSection').style.display = appSettings.lockEnabled ? 'block' : 'none';
+    document.getElementById('settingsLockPassword').value = appSettings.lockPassword;
+    // Blur toggle
+    document.getElementById('blurToggle').classList.toggle('on', appSettings.blurEnabled);
+    // Firebase rules
+    document.getElementById('firebaseRules').textContent = getFirebaseRules();
+}
+
+function toggleLock() {
+    var toggle = document.getElementById('lockToggle');
+    toggle.classList.toggle('on');
+    document.getElementById('lockPasswordSection').style.display = toggle.classList.contains('on') ? 'block' : 'none';
+}
+
+function toggleBlurMode() {
+    var toggle = document.getElementById('blurToggle');
+    toggle.classList.toggle('on');
+}
+
+function getFirebaseRules() {
+    return JSON.stringify({
+        rules: {
+            miaomiao: {
+                settings: { ".read": true, ".write": "auth != null || true" },
+                messages: { ".read": true, ".write": true },
+                unread: { ".read": true, ".write": true },
+                todos: { ".read": true, ".write": true },
+                period: { ".read": true, ".write": true },
+                moods: { ".read": true, ".write": true },
+                wishes: { ".read": true, ".write": true },
+                loveQuotes: { ".read": true, ".write": true },
+                countdowns: { ".read": true, ".write": true },
+                timeline: { ".read": true, ".write": true },
+                capsules: { ".read": true, ".write": true },
+                tasks: { ".read": true, ".write": true }
+            }
+        }
+    }, null, 2);
+}
+
+// ==================== Password Lock ====================
+var isLocked = false;
+
+function checkLock() {
+    if (!appSettings.lockEnabled || !appSettings.lockPassword) return;
+    var unlocked = sessionStorage.getItem('miaomiao_unlocked');
+    if (unlocked === 'true') {
+        isLocked = false;
+        hideLockScreen();
+        return;
+    }
+    isLocked = true;
+    showLockScreen();
+}
+
+function showLockScreen() {
+    var existing = document.getElementById('lockScreen');
+    if (existing) return;
+    var lockDiv = document.createElement('div');
+    lockDiv.id = 'lockScreen';
+    lockDiv.className = 'lock-screen';
+    lockDiv.innerHTML = '<div class="lock-icon">&#128274;</div>'
+        + '<div class="lock-title">苗苗的专属空间</div>'
+        + '<div class="lock-subtitle">输入密码解锁</div>'
+        + '<input type="password" class="lock-input" id="lockInput" maxlength="6" placeholder="····">'
+        + '<div class="lock-error" id="lockError"></div>'
+        + '<button class="lock-btn" onclick="tryUnlock()">解锁</button>';
+    document.body.appendChild(lockDiv);
+    document.getElementById('lockInput').focus();
+    document.getElementById('lockInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') tryUnlock();
+    });
+}
+
+function hideLockScreen() {
+    var lockDiv = document.getElementById('lockScreen');
+    if (lockDiv) {
+        lockDiv.classList.add('hidden');
+        setTimeout(function() { lockDiv.remove(); }, 500);
+    }
+}
+
+function tryUnlock() {
+    var input = document.getElementById('lockInput').value;
+    if (input === appSettings.lockPassword) {
+        sessionStorage.setItem('miaomiao_unlocked', 'true');
+        isLocked = false;
+        hideLockScreen();
+    } else {
+        document.getElementById('lockError').textContent = '密码错误，请重试';
+        document.getElementById('lockInput').value = '';
+        document.getElementById('lockInput').focus();
+    }
+}
+
+// ==================== Timeline ====================
+var allTimeline = [];
+var timelineRef = null;
+
+function listenTimeline() {
+    if (timelineRef) timelineRef.off();
+    timelineRef = db.ref('miaomiao/timeline');
+    timelineRef.on('value', function(snap) {
+        allTimeline = [];
+        var val = snap.val();
+        if (val) {
+            Object.keys(val).forEach(function(key) {
+                var item = val[key];
+                item._key = key;
+                allTimeline.push(item);
+            });
+            allTimeline.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+        }
+        renderTimeline();
+    });
+}
+
+function renderTimeline() {
+    var container = document.getElementById('timelineList');
+    if (!container) return;
+    if (allTimeline.length === 0) {
+        container.innerHTML = '<div class="timeline-empty"><div class="empty-icon">&#128247;</div>还没有回忆<br>添加你们的第一个美好瞬间吧</div>';
+        return;
+    }
+    var html = '<div class="timeline-container">';
+    allTimeline.forEach(function(item) {
+        html += '<div class="timeline-item">';
+        html += '<div class="tl-date">' + item.date + '</div>';
+        html += '<div class="tl-title">';
+        if (item.emoji) html += '<span class="tl-emoji">' + item.emoji + '</span>';
+        html += escapeHtml(item.title) + '</div>';
+        if (item.text) html += '<div class="tl-text">' + escapeHtml(item.text) + '</div>';
+        if (item.image) html += '<img class="tl-image" src="' + escapeHtml(item.image) + '" onerror="this.style.display=\'none\'">';
+        if (item.source) html += '<div class="tl-source">' + item.source + '</div>';
+        html += '<button class="wish-delete" onclick="deleteTimeline(\'' + item._key + '\')" style="position:absolute;top:10px;right:10px">&#128465;</button>';
+        html += '</div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function toggleTimelineForm() {
+    var form = document.getElementById('timelineForm');
+    var btn = document.getElementById('timelineAddBtn');
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        btn.style.display = 'none';
+    } else {
+        form.style.display = 'none';
+        btn.style.display = 'block';
+    }
+}
+
+function saveTimeline() {
+    var title = document.getElementById('timelineTitle').value.trim();
+    var date = document.getElementById('timelineDate').value;
+    if (!title || !date) { showToast('请填写标题和日期'); return; }
+    var role = localStorage.getItem('miaomiao_role') || 'boy';
+    db.ref('miaomiao/timeline').push({
+        title: title, date: date,
+        emoji: document.getElementById('timelineEmoji').value || '',
+        text: document.getElementById('timelineText').value || '',
+        image: document.getElementById('timelineImage').value || '',
+        source: '手动添加',
+        createdBy: role, createdAt: Date.now()
+    });
+    document.getElementById('timelineTitle').value = '';
+    document.getElementById('timelineDate').value = '';
+    document.getElementById('timelineEmoji').value = '';
+    document.getElementById('timelineText').value = '';
+    document.getElementById('timelineImage').value = '';
+    toggleTimelineForm();
+    showToast('回忆已保存');
+}
+
+function addToTimeline(title, date, emoji, text, source) {
+    var role = localStorage.getItem('miaomiao_role') || 'boy';
+    db.ref('miaomiao/timeline').push({
+        title: title, date: date, emoji: emoji || '',
+        text: text || '', image: '', source: source || '',
+        createdBy: role, createdAt: Date.now()
+    });
+    showToast('已加入时间线');
+}
+
+function deleteTimeline(key) {
+    if (confirm('确定删除这条回忆吗？')) {
+        db.ref('miaomiao/timeline/' + key).remove();
+    }
+}
+
+// ==================== Time Capsule ====================
+var allCapsules = [];
+var capsulesRef = null;
+
+function listenCapsules() {
+    if (capsulesRef) capsulesRef.off();
+    capsulesRef = db.ref('miaomiao/capsules');
+    capsulesRef.on('value', function(snap) {
+        allCapsules = [];
+        var val = snap.val();
+        if (val) {
+            Object.keys(val).forEach(function(key) {
+                var item = val[key];
+                item._key = key;
+                allCapsules.push(item);
+            });
+            allCapsules.sort(function(a, b) { return new Date(b.unlockDate) - new Date(a.unlockDate); });
+        }
+        renderCapsules();
+    });
+}
+
+function renderCapsules() {
+    var container = document.getElementById('capsuleList');
+    if (!container) return;
+    if (allCapsules.length === 0) {
+        container.innerHTML = '<div class="capsule-empty"><div class="empty-icon">&#128230;</div>还没有时光胶囊<br>写一封给未来的 TA 吧</div>';
+        return;
+    }
+    var today = new Date();
+    today.setHours(0,0,0,0);
+    var html = '';
+    allCapsules.forEach(function(item) {
+        var unlockDate = new Date(item.unlockDate);
+        unlockDate.setHours(0,0,0,0);
+        var isUnlocked = today >= unlockDate;
+        var isFullyOpened = item.opened;
+        html += '<div class="capsule-item ' + (isUnlocked ? 'unlocked' : 'locked') + '">';
+        html += '<div class="capsule-header">';
+        html += '<span class="capsule-icon">' + (isUnlocked ? '&#127873;' : '&#128274;') + '</span>';
+        html += '<span class="capsule-title">' + escapeHtml(item.title) + '</span>';
+        html += '<span class="capsule-date">' + item.unlockDate + '</span>';
+        html += '</div>';
+        if (!isUnlocked) {
+            var diff = Math.ceil((unlockDate - today) / (1000*60*60*24));
+            html += '<div class="capsule-countdown">';
+            html += '<div class="capsule-countdown-item"><div class="countdown-num">' + diff + '</div><div class="countdown-label">天后解锁</div></div>';
+            html += '</div>';
+            html += '<div class="capsule-locked-hint">&#128274; 内容已封存，到期后才能查看</div>';
+        } else if (!isFullyOpened) {
+            html += '<button class="capsule-open-btn" onclick="openCapsule(\'' + item._key + '\')">&#127873; 打开胶囊</button>';
+        } else {
+            html += '<div class="capsule-content">' + escapeHtml(item.content).replace(/\n/g, '<br>') + '</div>';
+            html += '<div class="capsule-from">—— ' + (item.author === 'boy' ? appSettings.boyName : appSettings.girlName) + '</div>';
+        }
+        html += '</div>';
+    });
+    container.innerHTML = html;
+}
+
+function toggleCapsuleForm() {
+    var form = document.getElementById('capsuleForm');
+    var btn = document.getElementById('capsuleAddBtn');
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        btn.style.display = 'none';
+    } else {
+        form.style.display = 'none';
+        btn.style.display = 'block';
+    }
+}
+
+function saveCapsule() {
+    var title = document.getElementById('capsuleTitle').value.trim();
+    var unlockDate = document.getElementById('capsuleUnlockDate').value;
+    var content = document.getElementById('capsuleContent').value.trim();
+    if (!title || !unlockDate || !content) { showToast('请填写完整信息'); return; }
+    var role = localStorage.getItem('miaomiao_role') || 'boy';
+    db.ref('miaomiao/capsules').push({
+        title: title, unlockDate: unlockDate, content: content,
+        author: role, opened: false, createdAt: Date.now()
+    });
+    document.getElementById('capsuleTitle').value = '';
+    document.getElementById('capsuleUnlockDate').value = '';
+    document.getElementById('capsuleContent').value = '';
+    toggleCapsuleForm();
+    showToast('时光胶囊已封存');
+}
+
+function openCapsule(key) {
+    db.ref('miaomiao/capsules/' + key + '/opened').set(true);
+    showToast('&#127873; 胶囊已打开！');
+}
+
+// ==================== Daily Task ====================
+var taskCategories = [
+    { name: '陪伴', emoji: '&#128588;', tasks: ['一起看一部电影','一起散步30分钟','一起做一顿饭','一起玩一个小游戏','一起听歌半小时'] },
+    { name: '夸夸', emoji: '&#128170;', tasks: ['夸 TA 三个优点','给 TA 写一段感谢的话','说出 TA 最让你感动的事','告诉 TA 你最喜欢 TA 的什么','回忆你们最开心的一天'] },
+    { name: '生活照顾', emoji: '&#127860;', tasks: ['给 TA 倒一杯水','帮 TA 按摩5分钟','提醒 TA 早点休息','给 TA 准备一个小零食','帮 TA 做一件家务'] },
+    { name: '约会', emoji: '&#128150;', tasks: ['计划一次小约会','一起拍一张合照','一起去一个没去过的地方','一起看日落或星空','一起画画或做手工'] },
+    { name: '惊喜', emoji: '&#127873;', tasks: ['给 TA 写一封情书','送 TA 一个小礼物','给 TA 做一个表情包','录一段语音给 TA','给 TA 画一幅画'] }
+];
+var currentTask = null;
+var taskStreakRef = null;
+var taskHistoryRef = null;
+
+function drawTask() {
+    var cat = taskCategories[Math.floor(Math.random() * taskCategories.length)];
+    var task = cat.tasks[Math.floor(Math.random() * cat.tasks.length)];
+    currentTask = { category: cat.name, emoji: cat.emoji, text: task, date: getTodayStr() };
+    document.getElementById('taskEmoji').innerHTML = cat.emoji;
+    document.getElementById('taskCategory').textContent = cat.name;
+    document.getElementById('taskText').textContent = task;
+    document.getElementById('taskCompleteBtn').style.display = 'block';
+}
+
+function completeTask() {
+    if (!currentTask) return;
+    var role = localStorage.getItem('miaomiao_role') || 'boy';
+    db.ref('miaomiao/tasks/history').push({
+        ...currentTask, completedBy: role, completedAt: Date.now()
+    });
+    updateTaskStreak();
+    currentTask = null;
+    document.getElementById('taskCompleteBtn').style.display = 'none';
+    showToast('&#127881; 任务完成！');
+}
+
+function updateTaskStreak() {
+    var today = getTodayStr();
+    db.ref('miaomiao/tasks/streak').once('value', function(snap) {
+        var streak = snap.val() || { count: 0, lastDate: '' };
+        var yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        var yesterdayStr = yesterday.getFullYear() + '-' + String(yesterday.getMonth()+1).padStart(2,'0') + '-' + String(yesterday.getDate()).padStart(2,'0');
+        if (streak.lastDate === yesterdayStr || streak.lastDate === today) {
+            if (streak.lastDate !== today) {
+                streak.count++;
+            }
+        } else {
+            streak.count = 1;
+        }
+        streak.lastDate = today;
+        db.ref('miaomiao/tasks/streak').set(streak);
+        renderTaskStreak(streak.count);
+    });
+}
+
+function renderTaskStreak(count) {
+    var el = document.getElementById('taskStreak');
+    if (count > 0) {
+        el.style.display = 'flex';
+        document.getElementById('streakNum').textContent = count;
+    } else {
+        el.style.display = 'none';
+    }
+}
+
+function listenTasks() {
+    db.ref('miaomiao/tasks/streak').on('value', function(snap) {
+        var streak = snap.val() || { count: 0, lastDate: '' };
+        renderTaskStreak(streak.count);
+    });
+    db.ref('miaomiao/tasks/history').orderByChild('completedAt').limitToLast(10).on('value', function(snap) {
+        var container = document.getElementById('taskHistory');
+        if (!container) return;
+        var val = snap.val();
+        if (!val) { container.innerHTML = ''; return; }
+        var items = [];
+        Object.keys(val).forEach(function(key) { items.push(val[key]); });
+        items.sort(function(a, b) { return b.completedAt - a.completedAt; });
+        var html = '<div class="task-history-title">最近完成</div>';
+        items.forEach(function(item) {
+            var d = new Date(item.completedAt);
+            var dateStr = (d.getMonth()+1) + '/' + d.getDate();
+            html += '<div class="task-history-item">'
+                + '<span class="history-date">' + dateStr + '</span>'
+                + '<span class="history-text">' + escapeHtml(item.text) + '</span>'
+                + '<span class="history-check">&#10003;</span>'
+                + '</div>';
+        });
+        container.innerHTML = html;
+    });
+}
+
+// ==================== Period Enhancement ====================
+function updatePeriodUI() {
+    // This will be called after period rendering to add symptom tracking
+    var periodPage = document.getElementById('pagePeriod');
+    if (!periodPage) return;
+    // Add disclaimer if not exists
+    if (!document.getElementById('periodDisclaimer')) {
+        var disclaimer = document.createElement('div');
+        disclaimer.id = 'periodDisclaimer';
+        disclaimer.className = 'period-disclaimer';
+        disclaimer.innerHTML = '&#9888; 本功能仅用于生活记录，不替代医学建议。如有健康问题请咨询专业医生。';
+        periodPage.appendChild(disclaimer);
+    }
+}
+
+// ==================== Export/Reset Data ====================
+function exportData() {
+    db.ref('miaomiao').once('value', function(snap) {
+        var data = snap.val();
+        var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'miaomiao-backup-' + getTodayStr() + '.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('数据已导出');
+    });
+}
+
+function confirmResetData() {
+    if (confirm('确定要清除所有数据吗？此操作不可恢复！')) {
+        if (confirm('再次确认：真的要删除所有数据吗？')) {
+            db.ref('miaomiao').remove();
+            localStorage.clear();
+            showToast('数据已清除');
+            setTimeout(function() { location.reload(); }, 1000);
+        }
+    }
+}
+
 // ==================== Init ====================
 function init() {
+    loadSettings();
     updateDate(); updateGreeting();
     updateLoveDays();
     listenPeriod();
@@ -3134,6 +4148,20 @@ function init() {
     listenMoods();
     listenWishes();
     listenQuotes();
+    listenTimeline();
+    listenCapsules();
+    listenTasks();
+    initSettingsPage();
+    updatePeriodUI();
+    // Listen for settings from Firebase
+    db.ref('miaomiao/settings').on('value', function(snap) {
+        var val = snap.val();
+        if (val) {
+            Object.assign(appSettings, val);
+            localStorage.setItem('miaomiao_settings', JSON.stringify(appSettings));
+            applySettings();
+        }
+    });
     setInterval(function(){ updateDate(); updateGreeting(); }, 60000);
     setInterval(fetchWeather, 30*60*1000);
 }

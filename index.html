@@ -4403,6 +4403,319 @@ function confirmResetData() {
     }
 }
 
+// ==================== Repair Room (和好小屋) ====================
+var repairSessionRef = null;
+var repairSession = null;
+var repairSessionId = null;
+var repairCooldownTimer = null;
+
+var repairEmotions = ['委屈','生气','难过','害怕','想被抱抱','不知道怎么说'];
+var repairCooldownMsgs = [
+    '先让情绪慢慢落地',
+    '现在不是输赢，是一起变好',
+    '等心软一点，再把话说清楚',
+    '深呼吸，我们都会好起来的',
+    '给彼此一点温柔的空间'
+];
+
+function openRepairPanel() {
+    document.getElementById('repairPanel').classList.add('show');
+    document.body.style.overflow = 'hidden';
+    listenRepairSession();
+}
+
+function closeRepairPanel() {
+    document.getElementById('repairPanel').classList.remove('show');
+    document.body.style.overflow = '';
+    if (repairCooldownTimer) { clearInterval(repairCooldownTimer); repairCooldownTimer = null; }
+    if (repairSessionRef) { repairSessionRef.off(); repairSessionRef = null; }
+}
+
+function listenRepairSession() {
+    if (repairSessionRef) repairSessionRef.off();
+    repairSessionRef = db.ref('miaomiao/repairSessions').orderByChild('status').equalTo('active').limitToLast(1);
+    repairSessionRef.on('value', function(snap) {
+        var val = snap.val();
+        if (val) {
+            var keys = Object.keys(val);
+            repairSessionId = keys[0];
+            repairSession = val[keys[0]];
+            repairSession._key = repairSessionId;
+        } else {
+            repairSessionId = null;
+            repairSession = null;
+        }
+        renderRepairPanel();
+    });
+}
+
+function renderRepairPanel() {
+    var container = document.getElementById('repairContent');
+    if (!container) return;
+    if (!repairSession) {
+        renderRepairNewSession(container);
+    } else {
+        renderRepairActiveSession(container);
+    }
+}
+
+function renderRepairNewSession(container) {
+    var html = '<div class="repair-section">';
+    html += '<div class="repair-section-title">&#9203; 先冷静一下</div>';
+    html += '<div class="repair-cooldown-options">';
+    var options = [{label:'10分钟',val:10},{label:'30分钟',val:30},{label:'1小时',val:60},{label:'3小时',val:180}];
+    options.forEach(function(o, i) {
+        html += '<button class="repair-cooldown-btn' + (i === 1 ? ' selected' : '') + '" onclick="selectCooldown(this,' + o.val + ')">' + o.label + '</button>';
+    });
+    html += '</div>';
+    html += '<div class="repair-custom-minutes">';
+    html += '<input type="number" id="repairCustomMin" placeholder="自定义" min="1" max="1440">';
+    html += '<span>分钟</span>';
+    html += '</div>';
+    html += '<button class="repair-save-btn" style="width:100%" onclick="startRepairSession()">&#128150; 开始冷静一下</button>';
+    html += '</div>';
+    html += '<div class="repair-section"><div class="repair-section-title">&#128214; 和好记录</div><div id="repairHistoryList"></div></div>';
+    container.innerHTML = html;
+    loadRepairHistory();
+}
+
+var selectedCooldown = 30;
+
+function selectCooldown(btn, minutes) {
+    document.querySelectorAll('.repair-cooldown-btn').forEach(function(b){b.classList.remove('selected')});
+    btn.classList.add('selected');
+    selectedCooldown = minutes;
+}
+
+function startRepairSession() {
+    var customMin = parseInt(document.getElementById('repairCustomMin').value);
+    var minutes = customMin > 0 ? customMin : selectedCooldown;
+    var now = Date.now();
+    var session = {
+        status: 'active', startedAt: now, resolvedAt: null,
+        cooldownMinutes: minutes, cooldownEndAt: now + minutes * 60 * 1000,
+        boy: { emotions: [], feelingText: '', hopeText: '', note: '', received: false },
+        girl: { emotions: [], feelingText: '', hopeText: '', note: '', received: false }
+    };
+    db.ref('miaomiao/repairSessions').push(session).then(function() {
+        showToast('冷静倒计时已开始');
+    });
+}
+
+function renderRepairActiveSession(container) {
+    var s = repairSession;
+    var now = Date.now();
+    var cooldownActive = now < s.cooldownEndAt;
+    var boyName = appSettings.boyName || 'Boy';
+    var girlName = appSettings.girlName || 'Girl';
+    var role = localStorage.getItem('miaomiao_role') || 'boy';
+    var myData = s[role] || {};
+    var partnerRole = role === 'boy' ? 'girl' : 'boy';
+    var partnerData = s[partnerRole] || {};
+    var html = '';
+
+    // Cooldown
+    html += '<div class="repair-section">';
+    if (cooldownActive) {
+        var remaining = s.cooldownEndAt - now;
+        html += '<div class="repair-cooldown-display">';
+        html += '<div class="repair-cooldown-time" id="repairCountdown">' + formatRepairCountdown(remaining) + '</div>';
+        html += '<div class="repair-cooldown-msg">先让情绪慢慢落地</div>';
+        html += '</div>';
+    } else {
+        html += '<div class="repair-cooldown-display">';
+        html += '<div class="repair-cooldown-time">&#10003;</div>';
+        html += '<div class="repair-cooldown-msg" style="color:var(--pink-500);font-weight:600">可以好好说话啦</div>';
+        html += '</div>';
+    }
+    html += '</div>';
+
+    // My feelings
+    html += '<div class="repair-section">';
+    html += '<div class="repair-section-title">&#128546; 我现在的感受</div>';
+    html += '<div class="repair-emotion-grid">';
+    repairEmotions.forEach(function(e) {
+        var sel = (myData.emotions || []).indexOf(e) >= 0 ? ' selected' : '';
+        html += '<button class="repair-emotion-btn' + sel + '" onclick="toggleRepairEmotion(this,\'' + e + '\')">' + e + '</button>';
+    });
+    html += '</div>';
+    html += '<textarea class="repair-textarea" id="repairFeelingText" placeholder="补充说说你的感受...">' + escapeHtml(myData.feelingText || '') + '</textarea>';
+    html += '<button class="repair-save-btn" onclick="saveRepairFeelings()">保存感受</button>';
+    html += '</div>';
+
+    // Partner feelings
+    if (partnerData.emotions && partnerData.emotions.length > 0) {
+        html += '<div class="repair-section">';
+        html += '<div class="repair-section-title">&#128546; ' + (role === 'boy' ? girlName : boyName) + '的感受</div>';
+        html += '<div class="repair-person-feelings">';
+        partnerData.emotions.forEach(function(e) { html += '<span class="repair-feeling-tag">' + escapeHtml(e) + '</span>'; });
+        html += '</div>';
+        if (partnerData.feelingText) html += '<div class="repair-person-text">' + escapeHtml(partnerData.feelingText) + '</div>';
+        html += '</div>';
+    }
+
+    // Hope
+    html += '<div class="repair-section">';
+    html += '<div class="repair-section-title">&#128172; 我希望你知道</div>';
+    html += '<textarea class="repair-textarea" id="repairHopeText" placeholder="我刚才真正难过的是……">' + escapeHtml(myData.hopeText || '') + '</textarea>';
+    html += '<button class="repair-save-btn" onclick="saveRepairHope()">保存</button>';
+    if (partnerData.hopeText) {
+        html += '<div class="repair-person-block" style="margin-top:10px">';
+        html += '<div class="repair-person-label">' + (role === 'boy' ? girlName : boyName) + ' 希望你知道：</div>';
+        html += '<div class="repair-person-text">' + escapeHtml(partnerData.hopeText) + '</div>';
+        html += '</div>';
+    }
+    html += '</div>';
+
+    // Notes
+    html += '<div class="repair-section">';
+    html += '<div class="repair-section-title">&#128221; 和好小纸条</div>';
+    html += '<textarea class="repair-textarea" id="repairNoteText" placeholder="写一张小纸条给 TA..."></textarea>';
+    html += '<button class="repair-save-btn" onclick="sendRepairNote()">&#128150; 递给 TA</button>';
+    if (myData.note) {
+        html += '<div class="repair-note-card" style="margin-top:10px"><div class="repair-note-from">我写的：</div><div class="repair-note-text">' + escapeHtml(myData.note) + '</div>';
+        if (myData.received) html += '<div class="repair-note-status">&#10003; 已收到</div>';
+        html += '</div>';
+    }
+    if (partnerData.note) {
+        html += '<div class="repair-note-card" style="margin-top:8px"><div class="repair-note-from">' + (role === 'boy' ? girlName : boyName) + ' 写的：</div><div class="repair-note-text">' + escapeHtml(partnerData.note) + '</div>';
+        if (!partnerData.received) html += '<button class="repair-received-btn" onclick="markRepairReceived()">&#128150; 我收到了</button>';
+        else html += '<div class="repair-note-status">&#10003; 已收到</div>';
+        html += '</div>';
+    }
+    html += '</div>';
+
+    // Resolved
+    if (myData.received && partnerData.received) {
+        html += '<div class="repair-resolved-card">';
+        html += '<div class="repair-resolved-icon">&#128150;</div>';
+        html += '<div class="repair-resolved-title">这次我们和好啦</div>';
+        html += '<div class="repair-resolved-time">开始于 ' + formatRepairTime(s.startedAt) + '</div>';
+        html += '</div>';
+        if (s.status === 'active') {
+            db.ref('miaomiao/repairSessions/' + repairSessionId).update({ resolvedAt: Date.now(), status: 'resolved' });
+        }
+    }
+
+    html += '<button class="repair-end-btn" onclick="endRepairSession()">结束本次会话</button>';
+    html += '<div class="repair-section"><div class="repair-section-title">&#128214; 和好记录</div><div id="repairHistoryList"></div></div>';
+    container.innerHTML = html;
+
+    if (cooldownActive) {
+        repairCooldownTimer = setInterval(function() {
+            var el = document.getElementById('repairCountdown');
+            if (!el) { clearInterval(repairCooldownTimer); return; }
+            var rem = s.cooldownEndAt - Date.now();
+            if (rem <= 0) {
+                el.innerHTML = '&#10003;';
+                el.nextElementSibling.textContent = '可以好好说话啦';
+                el.nextElementSibling.style.color = 'var(--pink-500)';
+                clearInterval(repairCooldownTimer);
+            } else {
+                el.textContent = formatRepairCountdown(rem);
+            }
+        }, 1000);
+    }
+    loadRepairHistory();
+}
+
+function formatRepairCountdown(ms) {
+    var t = Math.floor(ms / 1000);
+    var h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
+    if (h > 0) return h + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    return m + ':' + String(s).padStart(2,'0');
+}
+
+function formatRepairTime(ts) {
+    if (!ts) return '';
+    var d = new Date(ts);
+    return (d.getMonth()+1) + '月' + d.getDate() + '日 ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+var repairEmotions = ['委屈','生气','难过','害怕','想被抱抱','不知道怎么说'];
+
+function toggleRepairEmotion(btn) { btn.classList.toggle('selected'); }
+
+function saveRepairFeelings() {
+    if (!repairSessionId) return;
+    var role = localStorage.getItem('miaomiao_role') || 'boy';
+    var emotions = [];
+    document.querySelectorAll('.repair-emotion-btn.selected').forEach(function(b) { emotions.push(b.textContent); });
+    db.ref('miaomiao/repairSessions/' + repairSessionId + '/' + role).update({
+        emotions: emotions, feelingText: document.getElementById('repairFeelingText').value.trim()
+    });
+    showToast('感受已保存');
+}
+
+function saveRepairHope() {
+    if (!repairSessionId) return;
+    var role = localStorage.getItem('miaomiao_role') || 'boy';
+    var text = document.getElementById('repairHopeText').value.trim();
+    if (!text) { showToast('请写点什么'); return; }
+    db.ref('miaomiao/repairSessions/' + repairSessionId + '/' + role + '/hopeText').set(text);
+    showToast('已保存');
+}
+
+function sendRepairNote() {
+    if (!repairSessionId) return;
+    var role = localStorage.getItem('miaomiao_role') || 'boy';
+    var text = document.getElementById('repairNoteText').value.trim();
+    if (!text) { showToast('写点什么吧'); return; }
+    db.ref('miaomiao/repairSessions/' + repairSessionId + '/' + role).update({ note: text, received: false });
+    showToast('小纸条已递给 TA');
+}
+
+function markRepairReceived() {
+    if (!repairSessionId) return;
+    var role = localStorage.getItem('miaomiao_role') || 'boy';
+    db.ref('miaomiao/repairSessions/' + repairSessionId + '/' + role + '/received').set(true);
+    showToast('已确认收到');
+}
+
+function endRepairSession() {
+    if (!confirm('确定结束本次会话吗？')) return;
+    if (repairSessionId) db.ref('miaomiao/repairSessions/' + repairSessionId).update({ status: 'resolved', resolvedAt: Date.now() });
+    showToast('会话已结束');
+    closeRepairPanel();
+}
+
+function loadRepairHistory() {
+    db.ref('miaomiao/repairSessions').orderByChild('startedAt').limitToLast(5).once('value', function(snap) {
+        var container = document.getElementById('repairHistoryList');
+        if (!container) return;
+        var val = snap.val();
+        if (!val) { container.innerHTML = '<div class="repair-empty"><div class="repair-empty-icon">&#128150;</div>这里还没有记录。<br>希望它少用，但每次打开都能帮我们靠近一点。</div>'; return; }
+        var items = [];
+        Object.keys(val).forEach(function(key) { var item = val[key]; item._key = key; items.push(item); });
+        items.sort(function(a, b) { return (b.startedAt || 0) - (a.startedAt || 0); });
+        var boyName = appSettings.boyName || 'Boy';
+        var girlName = appSettings.girlName || 'Girl';
+        var html = '';
+        items.forEach(function(item) {
+            var duration = '';
+            if (item.resolvedAt && item.startedAt) {
+                var mins = Math.round((item.resolvedAt - item.startedAt) / 60000);
+                duration = mins < 60 ? ' (' + mins + '分钟)' : ' (' + Math.round(mins/60) + '小时)';
+            }
+            html += '<div class="repair-history-item">';
+            html += '<div class="repair-history-time">' + formatRepairTime(item.startedAt);
+            html += item.status === 'resolved' ? ' &#10003; 和好了' + duration : ' · 进行中';
+            html += '</div><div class="repair-history-notes">';
+            if (item.boy && item.boy.note) html += '<div class="repair-history-note"><div class="note-author">' + boyName + '</div>' + escapeHtml(item.boy.note.substring(0, 30)) + '</div>';
+            if (item.girl && item.girl.note) html += '<div class="repair-history-note"><div class="note-author">' + girlName + '</div>' + escapeHtml(item.girl.note.substring(0, 30)) + '</div>';
+            html += '</div><button class="repair-history-delete" onclick="deleteRepairSession(\'' + item._key + '\')">&#128465;</button></div>';
+        });
+        container.innerHTML = html;
+    });
+}
+
+function deleteRepairSession(key) {
+    if (!confirm('确定删除这条记录吗？')) return;
+    db.ref('miaomiao/repairSessions/' + key).remove();
+    showToast('记录已删除');
+    loadRepairHistory();
+}
+
 // ==================== Init ====================
 function init() {
     loadSettings();

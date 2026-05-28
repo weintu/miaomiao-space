@@ -1862,6 +1862,79 @@
             .top-header { padding-top: calc(14px + env(safe-area-inset-top)); }
             .tab-bar { padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
         }
+.chat-date-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.95);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.chat-date-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: var(--pink-100);
+    color: var(--pink-600);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.chat-date-btn:hover {
+    background: var(--pink-200);
+}
+.chat-date-display {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: linear-gradient(135deg, var(--pink-100), var(--purple-100));
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.chat-date-display:hover {
+    transform: scale(1.02);
+}
+#chatDateText {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+.chat-date-count {
+    font-size: 11px;
+    color: var(--pink-600);
+    background: rgba(255,255,255,0.8);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+}
+.chat-date-today {
+    padding: 6px 12px;
+    border-radius: 16px;
+    border: none;
+    background: linear-gradient(135deg, var(--pink-400), var(--pink-500));
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.chat-date-today:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(255,107,157,0.3);
+}
+.chat-date-picker {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
     </style>
 </head>
 <body>
@@ -2158,6 +2231,16 @@
                         </div>
                         <button class="chat-header-switch" onclick="switchRole()">切换身份</button>
                     </div>
+                    <div class="chat-date-nav">
+                        <button class="chat-date-btn" onclick="changeChatDate(-1)">&#10094;</button>
+                        <div class="chat-date-display" onclick="showDatePicker()">
+                            <span id="chatDateText">今天</span>
+                            <span class="chat-date-count" id="chatDateCount"></span>
+                        </div>
+                        <button class="chat-date-btn" onclick="changeChatDate(1)">&#10095;</button>
+                        <button class="chat-date-today" onclick="goToToday()">今天</button>
+                        <input type="date" id="chatDatePicker" class="chat-date-picker" onchange="onDatePick(this.value)">
+                    </div>
                     <div class="chat-messages" id="chatMessages">
                         <div class="chat-empty" id="chatEmpty">
                             <div class="chat-empty-icon">&#128172;</div>
@@ -2187,37 +2270,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- SWEET -->
-        <div class="page" id="pageSweet">
-            <div class="card repair-entry" onclick="openRepairPanel()">
-                <div class="repair-entry-title">&#127968; 和好小屋</div>
-                <div class="repair-entry-subtitle">有点不开心的时候，来这里慢慢把话说开</div>
-            </div>
-
-            <div class="card sweet-section">
-                <div class="card-title"><span class="icon">&#128197;</span> 纪念日倒计时</div>
-                <div id="countdownList"></div>
-                <div class="countdown-add-row">
-                    <input type="text" class="countdown-emoji-input" id="countdownEmoji" placeholder="&#127800;" maxlength="2">
-                    <input type="text" class="countdown-input" id="countdownTitle" placeholder="事件名称">
-                    <input type="date" class="countdown-input" id="countdownDate" style="min-width:120px">
-                    <button class="countdown-add-btn" onclick="addCountdown()">添加</button>
-                </div>
-            </div>
-
-            <div class="card sweet-section">
-                <div class="card-title"><span class="icon">&#128522;</span> 今日心情</div>
-                <div class="mood-today">
-                    <button class="mood-btn" onclick="setMood('happy','&#128516;','开心')"><span class="mood-emoji">&#128516;</span><span class="mood-label">开心</span></button>
-                    <button class="mood-btn" onclick="setMood('good','&#128522;','不错')"><span class="mood-emoji">&#128522;</span><span class="mood-label">不错</span></button>
-                    <button class="mood-btn" onclick="setMood('okay','&#128528;','一般')"><span class="mood-emoji">&#128528;</span><span class="mood-label">一般</span></button>
-                    <button class="mood-btn" onclick="setMood('sad','&#128546;','难过')"><span class="mood-emoji">&#128546;</span><span class="mood-label">难过</span></button>
-                    <button class="mood-btn" onclick="setMood('miss','&#128148;','想你')"><span class="mood-emoji">&#128148;</span><span class="mood-label">想你</span></button>
-                </div>
-                <div class="mood-status" id="moodStatus"></div>
-                <div class="card-subtitle" style="font-size:12px;color:var(--gray-400);margin-bottom:8px">心情日历</div>
-                <div class="mood-calendar" id="moodCalendar"></div>
             </div>
 
             <div class="card sweet-section">
@@ -3168,31 +3220,95 @@ function listenTyping() {
     });
 }
 
+var currentChatDate = null; // null means today
+
+function getDateStr(date) {
+    return date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0');
+}
+
+function formatDateDisplay(dateStr) {
+    var today = getTodayStr();
+    var yesterday = getDateStr(new Date(Date.now() - 86400000));
+    if (dateStr === today) return '今天';
+    if (dateStr === yesterday) return '昨天';
+    var parts = dateStr.split('-');
+    return parts[1] + '月' + parts[2] + '日';
+}
+
+function updateChatDateDisplay() {
+    var dateStr = currentChatDate || getTodayStr();
+    document.getElementById('chatDateText').textContent = formatDateDisplay(dateStr);
+    
+    // Count messages for this date
+    var count = allMessages.filter(function(msg) {
+        var msgDate = getDateStr(new Date(msg.timestamp));
+        return msgDate === dateStr;
+    }).length;
+    
+    var countEl = document.getElementById('chatDateCount');
+    if (count > 0) {
+        countEl.textContent = count + '条';
+        countEl.style.display = 'inline';
+    } else {
+        countEl.style.display = 'none';
+    }
+}
+
+function changeChatDate(offset) {
+    var dateStr = currentChatDate || getTodayStr();
+    var parts = dateStr.split('-');
+    var date = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+    date.setDate(date.getDate() + offset);
+    currentChatDate = getDateStr(date);
+    updateChatDateDisplay();
+    renderMessages();
+}
+
+function goToToday() {
+    currentChatDate = null;
+    updateChatDateDisplay();
+    renderMessages();
+}
+
+function showDatePicker() {
+    var picker = document.getElementById('chatDatePicker');
+    var dateStr = currentChatDate || getTodayStr();
+    picker.value = dateStr;
+    picker.showPicker();
+}
+
+function onDatePick(value) {
+    if (value) {
+        currentChatDate = value;
+        updateChatDateDisplay();
+        renderMessages();
+    }
+}
+
+function getMessagesForDate(dateStr) {
+    return allMessages.filter(function(msg) {
+        var msgDate = getDateStr(new Date(msg.timestamp));
+        return msgDate === dateStr;
+    });
+}
+
 function renderMessages() {
     var container = document.getElementById('chatMessages');
     if (!container) return;
 
-    if (allMessages.length === 0) {
+    var dateStr = currentChatDate || getTodayStr();
+    var dayMessages = getMessagesForDate(dateStr);
+
+    if (dayMessages.length === 0) {
+        var isToday = !currentChatDate || currentChatDate === getTodayStr();
         container.innerHTML = '<div class="chat-empty" id="chatEmpty">'
             + '<div class="chat-empty-icon">&#128172;</div>'
-            + '<div class="chat-empty-text">还没有留言<br>写下第一句话给 TA 吧</div></div>';
+            + '<div class="chat-empty-text">' + (isToday ? '还没有留言<br>写下第一句话给 TA 吧' : '这一天没有留言') + '</div></div>';
         return;
     }
 
     var html = '';
-    var lastDate = '';
-
-    allMessages.forEach(function(msg, idx) {
-        // Date divider
-        var msgDate = new Date(msg.timestamp).toLocaleDateString('zh-CN');
-        if (msgDate !== lastDate) {
-            lastDate = msgDate;
-            var today = new Date().toLocaleDateString('zh-CN');
-            var yesterday = new Date(Date.now() - 86400000).toLocaleDateString('zh-CN');
-            var dateLabel = msgDate === today ? '今天' : (msgDate === yesterday ? '昨天' : msgDate);
-            html += '<div class="chat-date-divider"><span>' + dateLabel + '</span></div>';
-        }
-
+    dayMessages.forEach(function(msg, idx) {
         var isSent = msg.sender === myRole;
         var rowClass = isSent ? 'sent' : 'received';
         var time = new Date(msg.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
@@ -3205,18 +3321,15 @@ function renderMessages() {
         html += '<div class="msg-sender">' + getRoleName(msg.sender) + '</div>';
 
         if (msg.recalled) {
-            // Recalled message
             var recalledText = isSent ? '你撤回了一条消息' : getRoleName(msg.sender) + ' 撤回了一条消息';
             html += '<div class="msg-recalled">' + recalledText + '</div>';
         } else {
-            // Normal message with long-press
             html += '<div class="msg-bubble" ondblclick="showReactPicker(event,\'' + msg._key + '\')" '
                   + 'oncontextmenu="showActionMenu(event,\'' + msg._key + '\',\'' + msg.sender + '\')" '
                   + 'ontouchstart="startLongPress(event,\'' + msg._key + '\',\'' + msg.sender + '\')" '
                   + 'ontouchend="cancelLongPress()" ontouchmove="cancelLongPress()">'
                   + escapeHtml(msg.text) + '</div>';
 
-            // Reactions
             if (msg.reactions) {
                 html += '<div class="msg-reactions">';
                 var reactions = typeof msg.reactions === 'string' ? JSON.parse(msg.reactions) : msg.reactions;
@@ -3244,6 +3357,7 @@ function renderMessages() {
     });
 
     container.innerHTML = html;
+    updateChatDateDisplay();
 
     // Scroll to bottom
     requestAnimationFrame(function() {
@@ -3257,6 +3371,12 @@ function sendMessage() {
     if (!text) { console.log('[Chat] Empty text'); return; }
     if (!myRole) { console.log('[Chat] No role selected'); return; }
     if (!db) { console.error('[Chat] db is null'); showToast('数据库未连接'); return; }
+
+    // If viewing past date, switch to today first
+    if (currentChatDate && currentChatDate !== getTodayStr()) {
+        currentChatDate = null;
+        updateChatDateDisplay();
+    }
 
     var msg = {
         sender: myRole,

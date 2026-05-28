@@ -2394,6 +2394,15 @@ async function fetchWeather() {
     var city = appSettings.city || '宝鸡';
     // Convert Chinese city name to pinyin for wttr.in API
     var cityPinyin = getCityPinyin(city);
+
+    // Update weather page title immediately
+    var weatherTitle = document.getElementById('weatherTitle');
+    if (weatherTitle) weatherTitle.innerHTML = '<span class="icon">&#9925;</span> ' + city + '今日天气';
+
+    // Show loading state
+    document.getElementById('weatherContent').innerHTML =
+        '<div class="weather-loading"><div class="spinner"></div><div>正在获取' + city + '天气...</div></div>';
+
     try {
         var response = await fetch('https://wttr.in/' + cityPinyin + '?format=j1');
         if (!response.ok) throw new Error('error');
@@ -2403,10 +2412,6 @@ async function fetchWeather() {
         var desc = c.lang_zh ? c.lang_zh[0].value : c.weatherDesc[0].value;
         var emoji = getWeatherEmoji(parseInt(c.weatherCode));
         var clothing = getClothingAdvice(temp, desc);
-
-        // Update weather page title
-        var weatherTitle = document.getElementById('weatherTitle');
-        if (weatherTitle) weatherTitle.innerHTML = '<span class="icon">&#9925;</span> ' + city + '今日天气';
 
         document.getElementById('weatherContent').innerHTML =
             '<div class="weather-main">' +
@@ -3692,10 +3697,11 @@ function saveSettings() {
         appSettings.lockPassword = pwdInput;
     }
     localStorage.setItem('miaomiao_settings', JSON.stringify(appSettings));
-    applySettings();
-    showToast('设置已保存');
+    showToast('设置已保存，正在获取' + appSettings.city + '天气...');
     // Sync to Firebase
     db.ref('miaomiao/settings').set(appSettings);
+    // Apply settings and fetch weather
+    applySettings();
 }
 
 function initSettingsPage() {

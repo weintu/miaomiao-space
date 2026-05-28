@@ -1726,7 +1726,7 @@
         <!-- WEATHER -->
         <div class="page" id="pageWeather">
             <div class="card">
-                <div class="card-title"><span class="icon">&#9925;</span> 宝鸡今日天气</div>
+                <div class="card-title" id="weatherTitle"><span class="icon">&#9925;</span> 宝鸡今日天气</div>
                 <div id="weatherContent">
                     <div class="weather-loading">
                         <div class="spinner"></div>
@@ -2391,8 +2391,11 @@ function getClothingAdvice(temp, desc) {
 }
 
 async function fetchWeather() {
+    var city = appSettings.city || '宝鸡';
+    // Convert Chinese city name to pinyin for wttr.in API
+    var cityPinyin = getCityPinyin(city);
     try {
-        var response = await fetch('https://wttr.in/Baoji?format=j1');
+        var response = await fetch('https://wttr.in/' + cityPinyin + '?format=j1');
         if (!response.ok) throw new Error('error');
         var data = await response.json();
         var c = data.current_condition[0];
@@ -2401,12 +2404,16 @@ async function fetchWeather() {
         var emoji = getWeatherEmoji(parseInt(c.weatherCode));
         var clothing = getClothingAdvice(temp, desc);
 
+        // Update weather page title
+        var weatherTitle = document.getElementById('weatherTitle');
+        if (weatherTitle) weatherTitle.innerHTML = '<span class="icon">&#9925;</span> ' + city + '今日天气';
+
         document.getElementById('weatherContent').innerHTML =
             '<div class="weather-main">' +
                 '<div class="weather-info">' +
                     '<div class="weather-temp">' + temp + '&deg;</div>' +
                     '<div class="weather-desc">' + desc + '</div>' +
-                    '<div class="weather-location">&#128205; 宝鸡市 &middot; 陕西</div>' +
+                    '<div class="weather-location">&#128205; ' + city + '</div>' +
                 '</div>' +
                 '<div class="weather-icon">' + emoji + '</div>' +
             '</div>' +
@@ -2423,11 +2430,30 @@ async function fetchWeather() {
     } catch (e) {
         document.getElementById('weatherContent').innerHTML =
             '<div class="weather-main"><div class="weather-info"><div class="weather-temp">--&deg;</div>' +
-            '<div class="weather-desc">天气获取失败</div><div class="weather-location">&#128205; 宝鸡市</div></div>' +
+            '<div class="weather-desc">天气获取失败</div><div class="weather-location">&#128205; ' + city + '</div></div>' +
             '<div class="weather-icon">&#9925;</div></div>' +
             '<div class="clothing-guide"><div class="clothing-title">&#128090; 穿衣指南</div>' +
             '<div class="clothing-text">天气数据暂时获取不到，出门前看看窗外吧，记得根据温度适当增减衣物哦！</div></div>';
     }
+}
+
+// City name to pinyin mapping for weather API
+function getCityPinyin(city) {
+    var cityMap = {
+        '北京': 'Beijing', '上海': 'Shanghai', '广州': 'Guangzhou', '深圳': 'Shenzhen',
+        '成都': 'Chengdu', '杭州': 'Hangzhou', '武汉': 'Wuhan', '南京': 'Nanjing',
+        '重庆': 'Chongqing', '西安': 'Xian', '天津': 'Tianjin', '苏州': 'Suzhou',
+        '郑州': 'Zhengzhou', '长沙': 'Changsha', '东莞': 'Dongguan', '沈阳': 'Shenyang',
+        '青岛': 'Qingdao', '合肥': 'Hefei', '佛山': 'Foshan', '宁波': 'Ningbo',
+        '昆明': 'Kunming', '大连': 'Dalian', '福州': 'Fuzhou', '厦门': 'Xiamen',
+        '哈尔滨': 'Harbin', '济南': 'Jinan', '温州': 'Wenzhou', '石家庄': 'Shijiazhuang',
+        '南宁': 'Nanning', '长春': 'Changchun', '泉州': 'Quanzhou', '贵阳': 'Guiyang',
+        '南昌': 'Nanchang', '无锡': 'Wuxi', '烟台': 'Yantai', '珠海': 'Zhuhai',
+        '宝鸡': 'Baoji', '咸阳': 'Xianyang', '渭南': 'Weinan', '延安': 'Yanan',
+        '汉中': 'Hanzhong', '榆林': 'Yulin', '安康': 'Ankang', '商洛': 'Shangluo',
+        '铜川': 'Tongchuan'
+    };
+    return cityMap[city] || city;
 }
 
 // ==================== Period Tracker (Firebase synced) ====================
@@ -3650,6 +3676,8 @@ function applySettings() {
     if (appSettings.blurEnabled) {
         document.body.classList.add('blur-mode');
     }
+    // Update weather city
+    fetchWeather();
 }
 
 function saveSettings() {

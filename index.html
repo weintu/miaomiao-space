@@ -2174,7 +2174,10 @@
                 </div>
                 <div class="settings-section">
                     <div class="settings-label">所在城市</div>
-                    <input type="text" class="settings-input" id="settingsCity" placeholder="例如：宝鸡">
+                    <div style="display:flex;gap:8px">
+                        <input type="text" class="settings-input" id="settingsCity" placeholder="例如：宝鸡" style="flex:1">
+                        <button class="countdown-add-btn" onclick="saveCityAndRefresh()" style="white-space:nowrap">保存城市</button>
+                    </div>
                 </div>
                 <div class="settings-section">
                     <div class="settings-label">主题色</div>
@@ -3682,6 +3685,20 @@ function applySettings() {
         document.body.classList.add('blur-mode');
     }
     // Update weather city
+    fetchWeather();
+}
+
+function saveCityAndRefresh() {
+    var cityInput = document.getElementById('settingsCity');
+    var newCity = cityInput.value.trim();
+    if (!newCity) {
+        showToast('请输入城市名称');
+        return;
+    }
+    appSettings.city = newCity;
+    localStorage.setItem('miaomiao_settings', JSON.stringify(appSettings));
+    db.ref('miaomiao/settings/city').set(newCity);
+    showToast('城市已保存为：' + newCity + '，正在获取天气...');
     fetchWeather();
 }
 
